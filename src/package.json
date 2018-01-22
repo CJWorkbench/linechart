@@ -1,5 +1,5 @@
 {
-  "name": "bar-chart",
+  "name": "line-chart",
   "version": "1.0.0",
   "description": "",
   "main": "SimpleChart.js",
