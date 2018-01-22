@@ -1,0 +1,30 @@
+{
+  "name": "Column Chart",
+  "id_name": "linechart",
+  "category" : "Visualize",
+  "icon" : "chart",
+  "description" : "Create a line chart.",
+  "html_output": true,
+  "parameters": [
+    {
+      "name": "Chart",
+      "id_name": "chart-line",
+      "type": "custom",
+      "ui-only": true,
+      "derived-data": true
+    },
+    {
+      "name": "Chart Options",
+      "id_name": "chart_editor_line",
+      "type": "custom",
+      "ui-only": true
+    },
+    {
+      "name": "hidden chart state",
+      "id_name": "chartstate",
+      "type": "string",
+      "visible": false,
+      "ui-only": true
+    }
+  ]
+}
