@@ -1,10 +1,9 @@
 // Chart JSX component wraps a ChartBuilder
 
 import React from 'react'
-//import { store, wfModuleStatusAction } from '../../workflow-reducer'
 import PropTypes from 'prop-types'
 import { errorText } from './errors'
-import debounce from 'lodash.debounce'
+import ExportChart from './ExportChart'
 
 var ChartViewActions = require("chartbuilder/src/js/actions/ChartViewActions");
 var chartConfig = require("chartbuilder/src/js/charts/chart-type-configs");
@@ -138,21 +137,14 @@ export default class SimpleChartParameter extends React.Component {
     if (typeof this.state.chartProps !== 'undefined' > 0 && this.state.metadata)  {
       return (
         <div>
-          <ChartExport
-            data={this.state.chartProps.data}
-            enableJSONExport={false}
-            svgWrapperClassName="render-svg-mobile"
-            metadata={this.state.metadata}
-            stepNumber={'19'}
-            additionalComponents={null}
-            model={this.state}
-          />
+          <ExportChart targetSvgWrapperClassname="rendered-svg" />
           <RendererWrapper
             editable={false}
             showMetadata={true}
             model={this.state}
             enableResponsive={true}
-            className="render-svg-mobile"
+            height="100%"
+            className="rendered-svg"
             svgClassName="rendered-svg-class-name" />
         </div>
       )

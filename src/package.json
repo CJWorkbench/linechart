@@ -1,14 +1,18 @@
 {
-  "name": "line-chart",
+  "name": "bar-chart",
   "version": "1.0.0",
   "description": "",
   "main": "SimpleChart.js",
   "dependencies": {
+    "bootstrap": "^4.0.0",
     "chartbuilder": "git://github.com/CJWorkbench/Chartbuilder.git#library-style",
     "chartbuilder-ui": "git://github.com/CJWorkbench/chartbuilder-ui.git#workbench-integration",
+    "d3": "^4.12.2",
     "lodash.debounce": "^4.0.8",
     "react": "^15.6.2",
-    "react-dom": "^15.6.2"
+    "react-dom": "^15.6.2",
+    "reactstrap": "^4.8.0",
+    "save-svg-as-png": "^1.2.0"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
