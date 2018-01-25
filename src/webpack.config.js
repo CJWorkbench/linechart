@@ -44,6 +44,16 @@ module.exports = {
         }, {
           loader: 'css-loader'
         }]
+      },
+      {
+        // font handling
+        test: /\.(woff)$/,
+        loader: 'url-loader',
+        options: {
+          limit: 25000,
+          mimetype: 'application/font-woff',
+          name: '../fonts/[name].[ext]'
+        }
       }
     ]
   },

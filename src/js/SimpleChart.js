@@ -20,9 +20,6 @@ var ErrorStore = require("chartbuilder/src/js/stores/ErrorStore");
 // Do we actually need to do require for these?
 var ChartExport = require("chartbuilder/src/js/components/ChartExport");
 
-require("../css/chartbuilder_fonts_colors.css")
-require("../css/chartbuilder.css");
-
 // Overload the chartbuilder error messages so we can set our own
 var cbErrorText = require("chartbuilder/src/js/util/error-names");
 Object.keys(cbErrorText).map( (key) => {
