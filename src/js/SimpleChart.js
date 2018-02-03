@@ -45,30 +45,28 @@ export default class SimpleChartParameter extends React.Component {
   constructor(props) {
     super(props);
     this.state = { loading: true };
-    this.loadingState = { loading: true, loaded_ever: true };
     this.onStateChange = this.onStateChange.bind(this);
     this.onErrorChange = this.onErrorChange.bind(this);
     this.loadChartProps = this.loadChartProps.bind(this);
     this.windowWillReceiveData = this.windowWillReceiveData.bind(this);
-    // I kinda hate this... we store the last chart state we were given here, to suppress unnecessary API calls.
-    // We can't put it in React state because we don't want to trigger a render... and this state doesn't change
-    // the render, as this value is passed to us by the ChartBuilder component, so it's already rendered.
-    // Only tricky bit is to remember to reset this when our props change.
-    this.lastChartStateString = null;
   }
 
-  // called when any change is made to chart. Update error status, save to hidden 'chartstate' text field
+  // called when any change is made to chart. Update error status.
   onStateChange(errors) {
-    var model = this.getStateFromStores();
-    this.setState(Object.assign({}, model, {loading: errors || this.state.errors}));
+    let model = this.getStateFromStores();
+    let errorState;
+    if (errors) {
+        errorState = {errors: errors, loading: !errors.valid}
+    }
+    this.setState(Object.assign({}, model, errorState));
   }
 
   // called when errors return -- they need to be handled seperately
   onErrorChange() {
-    //this.setState({loading: false});
     var errors = ErrorStore.getAll();
     this.onStateChange(errors);
   }
+
 
   getStateFromStores() {
     // Don't get errors here. Errors default to 'valid' before input
@@ -86,35 +84,37 @@ export default class SimpleChartParameter extends React.Component {
     return { raw: JSONtoCSV(data.rows) };
   }
 
-  loadChartProps(modelText) {
-    var model;
-    var defaults = chartConfig.xy.defaultProps;
+  loadChartProps(modelText, data) {
+    let model;
+    let defaults = chartConfig.xy.defaultProps;
+
+    defaults.chartProps.chartSettings[0].type = this.props.chartType || 'line';
+    defaults.chartProps.scale.typeSettings.maxLength = 7;
+
     if (modelText !== "") {
       model = JSON.parse(modelText);
       this.lastChartStateString = modelText;
     } else {
       model = defaults;
     }
-    model.chartProps.input = {raw: ''} //blank data to start so we correctly get errors
+    model.chartProps.input = data
     return model;
-  }
-
-  componentWillMount(props) {
-    var defaults = chartConfig.xy.defaultProps;
-    var modelText = workbench.params.chartstate;
-    var newModel = this.loadChartProps(modelText);
-    defaults.chartProps.chartSettings[0].type = this.props.chartType || 'line';
-    defaults.chartProps.scale.typeSettings.maxLength = 7;
-    ChartServerActions.receiveModel(newModel);
   }
 
   // Load input data, settings when first rendered
   componentDidMount() {
     ChartPropertiesStore.addChangeListener(this.onStateChange);
     ChartMetadataStore.addChangeListener(this.onStateChange);
-    ErrorStore.addChangeListener(this.onErrorChange);
     SessionStore.addChangeListener(this.onStateChange);
-    ChartViewActions.updateInput('input', this.loadChart(workbench.input));
+    ErrorStore.addChangeListener(this.onErrorChange);
+
+    let data = this.loadChart(workbench.input);
+
+    let modelText = workbench.params.chart_editor;
+    let newModel = this.loadChartProps(modelText, data);
+    ChartServerActions.receiveModel(newModel);
+    ChartViewActions.updateInput('input', data);
+    this.setState({loading: false});
 
     window.addEventListener('message', this.windowWillReceiveData, false);
   }
@@ -122,8 +122,8 @@ export default class SimpleChartParameter extends React.Component {
   componentWillUnmount() {
 		ChartPropertiesStore.removeChangeListener(this.onStateChange);
 		ChartMetadataStore.removeChangeListener(this.onStateChange);
-		ErrorStore.removeChangeListener(this.onErrorChange);
 		SessionStore.removeChangeListener(this.onStateChange);
+		ErrorStore.removeChangeListener(this.onErrorChange);
 	}
 
   windowWillReceiveData(event) {
@@ -131,7 +131,7 @@ export default class SimpleChartParameter extends React.Component {
   }
 
   render() {
-    if (typeof this.state.chartProps !== 'undefined' > 0 && this.state.metadata)  {
+    if (!this.state.loading && typeof this.state.errors !== 'undefined')  {
       return (
         <div>
           <ExportChart targetSvgWrapperClassname="rendered-svg" />
