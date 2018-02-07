@@ -8,24 +8,17 @@
   "html_output" : true,
   "parameters": [
     {
-      "name": "Chart",
-      "id_name": "chart-line",
-      "type": "custom",
-      "ui-only": true,
-      "derived-data": true
-    },
-    {
       "name": "Chart Options",
-      "id_name": "chart_editor_line",
+      "id_name": "chart_editor",
       "type": "custom",
       "ui-only": true
     },
     {
-      "name": "hidden chart state",
-      "id_name": "chartstate",
+      "name": "Chart Type",
+      "id_name": "chart_type",
       "type": "string",
-      "visible": false,
-      "ui-only": true
+      "default": "column",
+      "visible": false
     }
   ]
 }
