@@ -89,7 +89,8 @@ export default class SimpleChartParameter extends React.Component {
     let defaults = chartConfig.xy.defaultProps;
 
     defaults.chartProps.chartSettings[0].type = this.props.chartType || 'line';
-    defaults.chartProps.scale.typeSettings.maxLength = 7;
+    defaults.chartProps.scale.typeSettings.maxLength = 15;
+    defaults.chartProps.scale.typeSettings.tickFont="10px Khula-Light";
 
     if (modelText !== "") {
       model = JSON.parse(modelText);
