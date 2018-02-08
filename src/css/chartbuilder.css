@@ -16,6 +16,14 @@ body {
   color: #686768;
 }
 
+/* We have to explicitly set all containing divs to 100%, which is a great argument for getting rid of unnecessary
+containing divs
+ */
+#root, [data-reactroot], [data-reactroot] > div {
+    height: 100%;
+}
+
+
 /* --- Icon font set --- */
 
 @font-face {
