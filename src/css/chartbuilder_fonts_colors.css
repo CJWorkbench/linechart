@@ -1018,6 +1018,11 @@ svg .svg-background {
 .svg-text.svg-text-title {
   fill: #666;
 }
+
+.svg-text.svg-text-title text{
+  text-anchor:middle;
+}
+
 .medium .svg-text {
   font-size: 20px;
 }
