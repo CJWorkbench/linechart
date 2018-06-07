@@ -49,7 +49,7 @@ containing divs
 }
 .icon-download:before{
   content: "\e90b";
-  font-size: 1.3rem;
+  font-size: 1.5rem;
 }
 
 /* color text menu */
@@ -68,24 +68,29 @@ containing divs
 }
 
 .export-button {
-  width:3rem;
-  height:3rem;
+  width:3.5rem;
+  height:3.5rem;
   border-radius:50px;
   display:flex;
   justify-content: center;
   align-items: center;
   position:absolute;
   right:1.5rem;
-  top:1rem;
-  border: 1px solid #E7E7E7;
+  top:1.5rem;
+  border: 2px solid #E7E7E7;
+  font-size: 2rem
 }
 
 .export-button:hover{
-  background-color: #F0EDED;
+  background-color: #f4fcfd;
+  border:0px;
+  color:#fff;
+
 }
 
 .export-button:active{
   border: 1px solid #b4b4b4;
+  color:#fff;
 }
 
 .svg-credit-data{
@@ -93,7 +98,7 @@ containing divs
 }
 
 .dropdown-menu {
-  margin-top: 0.5rem;
+  margin-top: 2rem;
   border:1px solid rgba(118,155,176,0.2);
   border-radius: 5px;
   box-shadow: -0.5rem 0.5rem 2.5rem 0 rgba(0,0,0,0.10);
@@ -125,4 +130,8 @@ containing divs
   background-color: red;
   width:100%;
   height: 100%;
+}
+
+.renderer-wrapper{
+  background-color: red;
 }
