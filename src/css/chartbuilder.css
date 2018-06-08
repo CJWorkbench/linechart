@@ -75,17 +75,14 @@ containing divs
   justify-content: center;
   align-items: center;
   position:absolute;
-  right:1.5rem;
+  right:2.25rem;
   top:1.5rem;
-  border: 2px solid #E7E7E7;
+  border: 2px solid #EDEDED;
   font-size: 2rem
 }
 
-.export-button:hover{
-  background-color: #f4fcfd;
-  border:0px;
-  color:#fff;
-
+.export-button:hover {
+  border: 2px solid #b4b4b4;
 }
 
 .export-button:active{
