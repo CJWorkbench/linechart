@@ -4,7 +4,7 @@ Displays a line chart based on your data in Workbench
 
 ## Installation
 
-Click "Add custom module" in Workbench and paste the Github URL. Voila!
+Import through the usual "Import from Github" menu item in Workbench and paste the Github URL. Voila!
 
 ## Development
 
