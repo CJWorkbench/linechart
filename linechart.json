@@ -30,7 +30,7 @@
       "id_name": "x_data_type",
       "type": "menu",
       "placeholder": "Select X-Axis Data Type",
-      "menu_items": "Numbers|Dates",
+      "menu_items": "Numbers|Dates (ISO 8601-formatted)",
       "default": "0"
     },
     {
