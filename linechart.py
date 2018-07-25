@@ -26,7 +26,6 @@ class XSeries:
 
     @property
     def data_type(self):
-        print(repr(self.series.dtype.type))
         return self.series.dtype.type
 
 
