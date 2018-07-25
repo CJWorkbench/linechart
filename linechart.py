@@ -66,8 +66,10 @@ class SeriesParams:
         for y_column in self.y_columns:
             data[y_column.name] = y_column.series
         dataframe = pandas.DataFrame(data)
-        return dataframe.melt(self.x_series.name, var_name='line',
-                              value_name='y').to_dict(orient='records')
+        vertical = dataframe.melt(self.x_series.name, var_name='line',
+                                  value_name='y')
+        vertical.dropna(inplace=True)
+        return vertical.to_dict(orient='records')
 
     def to_vega(self) -> Dict[str, Any]:
         """
@@ -97,11 +99,13 @@ class SeriesParams:
                 "x": {
                     "field": self.x_series.name,
                     "type": x_data_type,
+                    "axis": {"title": self.x_axis_label},
                 },
 
                 "y": {
                     "field": "y",
                     "type": "quantitative",
+                    "axis": {"title": self.y_axis_label},
                 },
 
                 "color": {
@@ -196,11 +200,13 @@ class UserParams:
         [ ] Error if X column does not have two values
         [ ] X column can be number or date
         [ ] Missing dates are coerced to 1970-01-01
+        [ ] Missing Y values are omitted
         [ ] Error if no Y columns chosen
         [ ] Error if no rows
         [ ] Error if too many bars
         [ ] Error if a Y column is missing
         [ ] Error if a Y column is the X column
+        [ ] Error if a Y column has fewer than 1 non-missing value
         [ ] Default title, X and Y axis labels
         """
         if len(table.index) >= MaxNBars:
@@ -218,7 +224,7 @@ class UserParams:
         if x_values.min() == x_values.max():
             raise ValueError(
                 f'Cannot plot X-axis column {self.x_column} '
-                'because it only has one {self.x_type} value'
+                f'because it only has one {self.x_type.__name__} value'
             )
         x_series = XSeries(x_values, self.x_column)
 
@@ -237,7 +243,13 @@ class UserParams:
 
             series = table[ycolumn.column]
             floats = pandas.to_numeric(series, errors='coerce')
-            floats.fillna(0.0, inplace=True)
+
+            if not floats.count():
+                raise ValueError(
+                    f'You cannot plot Y-axis column {ycolumn.column} '
+                    'because it nas no numeric data'
+                )
+
             y_columns.append(YSeries(floats, ycolumn.column, ycolumn.color))
 
         if not len(table):
