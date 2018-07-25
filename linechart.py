@@ -1,4 +1,6 @@
+import datetime
 import json
+from numpy import datetime64, float64, ndarray
 from typing import Any, Dict, List
 import pandas
 
@@ -19,9 +21,14 @@ class GentleValueError(ValueError):
 
 
 class XSeries:
-    def __init__(self, series: pandas.Series, name: str):
+    def __init__(self, series: ndarray, name: str):
         self.series = series
         self.name = name
+
+    @property
+    def data_type(self):
+        print(repr(self.series.dtype.type))
+        return self.series.dtype.type
 
 
 class YSeries:
@@ -50,9 +57,13 @@ class SeriesParams:
         Return value is a list of dict records. Each has
         {x_series.name: 'X Name', 'bar': 'Bar Name', 'y': 1.0}
         """
-        data = {
-            self.x_series.name: self.x_series.series,
-        }
+        data = {}
+        if self.x_series.data_type == datetime64:
+            strs = self.x_series.series.astype(str)
+            strs = [s + 'Z' for s in strs]
+            data[self.x_series.name] = strs
+        else:
+            data[self.x_series.name] = self.x_series.series
         for y_column in self.y_columns:
             data[y_column.name] = y_column.series
         dataframe = pandas.DataFrame(data)
@@ -63,6 +74,11 @@ class SeriesParams:
         """
         Build a Vega bar chart or grouped bar chart.
         """
+        if self.x_series.data_type == datetime64:
+            x_data_type = 'temporal'
+        else:
+            x_data_type = 'quantitative'
+
         ret = {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
             "title": self.title,
@@ -81,7 +97,7 @@ class SeriesParams:
             "encoding": {
                 "x": {
                     "field": self.x_series.name,
-                    "type": "quantitative",
+                    "type": x_data_type,
                 },
 
                 "y": {
@@ -121,16 +137,38 @@ class YColumn:
         self.color = color
 
 
+def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
+    """
+    Convert `series` to `data_type`, replacing erroneous values.
+    """
+    if data_type == float64:
+        x_floats = pandas.to_numeric(series, errors='coerce')
+        x_floats.fillna(0.0, inplace=True)
+        return x_floats
+    else:
+        # TODO:
+        # * test "UTC" does what we expect
+        # * test errors='coerce'
+        # * test infer_datetime_format
+        x_dates = pandas.to_datetime(series, utc=True, errors='coerce',
+                                     infer_datetime_format=True)
+        x_dates.fillna(datetime64(0, 's'), inplace=True)
+        # pandas' dtype is not datetime64; np's is
+        x_dates = x_dates.values.astype(datetime64)
+        return x_dates
+
+
 class UserParams:
     """
     Parameter dict specified by the user: valid types, unchecked values.
     """
     def __init__(self, *, title: str, x_axis_label: str, y_axis_label: str,
-                 x_column: str, y_columns: List[YColumn]):
+                 x_column: str, x_type: type, y_columns: List[YColumn]):
         self.title = title
         self.x_axis_label = x_axis_label
         self.y_axis_label = y_axis_label
         self.x_column = x_column
+        self.x_type = x_type
         self.y_columns = y_columns
 
     @staticmethod
@@ -139,12 +177,16 @@ class UserParams:
         x_axis_label = str(params.get('x_axis_label', ''))
         y_axis_label = str(params.get('y_axis_label', ''))
         x_column = str(params.get('x_column', ''))
+        if str(params.get('x_data_type')) == '1':
+            x_type = datetime64
+        else:
+            x_type = float64
         y_columns = UserParams.parse_y_columns(
             params.get('y_columns', 'null')
         )
         return UserParams(title=title, x_axis_label=x_axis_label,
                           y_axis_label=y_axis_label, x_column=x_column,
-                          y_columns=y_columns)
+                          x_type=x_type, y_columns=y_columns)
 
     def validate_with_table(self, table: pandas.DataFrame) -> SeriesParams:
         """
@@ -152,7 +194,9 @@ class UserParams:
 
         Features ([tested?]):
         [ ] Error if X column is missing
-        [ ] Error if X column is not numeric
+        [ ] Error if X column does not have two values
+        [ ] X column can be number or date
+        [ ] Missing dates are coerced to 1970-01-01
         [ ] Error if no Y columns chosen
         [ ] Error if no rows
         [ ] Error if too many bars
@@ -171,15 +215,13 @@ class UserParams:
         if not self.y_columns:
             raise GentleValueError('Please choose a Y-axis column')
 
-        x_floats = pandas.to_numeric(table[self.x_column], errors='coerce')
-        x_floats.fillna(0.0, inplace=True)
-        x_series = XSeries(x_floats, self.x_column)
-
-        if x_floats.min() == x_floats.max():
+        x_values = _coerce_x_series(table[self.x_column], self.x_type)
+        if x_values.min() == x_values.max():
             raise ValueError(
                 f'Cannot plot X-axis column {self.x_column} '
-                'because it is not numeric'
+                'because it only has one {self.x_type} value'
             )
+        x_series = XSeries(x_values, self.x_column)
 
         y_columns = []
         for ycolumn in self.y_columns:
