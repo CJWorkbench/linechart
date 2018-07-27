@@ -82,6 +82,42 @@ class SeriesParams:
         ret = {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
             "title": self.title,
+            "config":{
+
+                "title": {
+                    "color": "#383838",
+                    "font": "Nunito Sans, Helvetica, sans-serif",
+                    "fontSize": 20,
+                    "fontWeight": "normal",
+                },
+
+                "axis": {
+                    "tickSize": 3,
+                    "titlePadding": 20,
+                    "titleFontSize": 15,
+                    "titleFontWeight": 100,
+                    "titleColor": "#686768",
+                    "titleFont": "Nunito Sans, Helvetica, sans-serif",
+                    "labelFont": "Nunito Sans, Helvetica, sans-serif",
+                    "labelFontWeight":400,
+                    "labelColor": "#383838",
+                    "labelFontSize": 12,
+                    "labelPadding": 10,
+                    "labelOverlap":"true",
+                    "gridOpacity":.5,
+                },
+
+                "legend": {
+                    "padding": 15,
+                    "offset": 0,
+                    "labelFontSize": 12,
+                    "rowPadding": 10,
+                    "labelFont": "Nunito Sans, Helvetica, sans-serif",
+                    "labelColor": "#383838",
+                    "labelFontWeight":400,
+                },
+
+            },
 
             "data": {
                 "values": self.to_vega_data_values(),
@@ -112,9 +148,9 @@ class SeriesParams:
                     "type": "nominal",
                     "scale": {
                         "range": [y.color for y in self.y_columns],
-                    }
+                    },
                 },
-            }
+            },
         }
 
         if len(self.y_columns) == 1:
@@ -254,7 +290,7 @@ class UserParams:
         if not len(table):
             raise GentleValueError('no records to plot')
 
-        title = self.title or 'Column Chart'
+        title = self.title or 'Line Chart'
         x_axis_label = self.x_axis_label or x_series.name
         y_axis_label = self.y_axis_label or y_columns[0].name
 
