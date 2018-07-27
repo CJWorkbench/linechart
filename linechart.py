@@ -85,6 +85,7 @@ class SeriesParams:
             "config":{
 
                 "title": {
+                    "offset": 15,
                     "color": "#383838",
                     "font": "Nunito Sans, Helvetica, sans-serif",
                     "fontSize": 20,
@@ -99,24 +100,13 @@ class SeriesParams:
                     "titleColor": "#686768",
                     "titleFont": "Nunito Sans, Helvetica, sans-serif",
                     "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFontWeight":400,
+                    "labelFontWeight": 400,
                     "labelColor": "#383838",
                     "labelFontSize": 12,
                     "labelPadding": 10,
                     "labelOverlap":"true",
-                    "gridOpacity":.5,
+                    "gridOpacity": .5,
                 },
-
-                "legend": {
-                    "padding": 15,
-                    "offset": 0,
-                    "labelFontSize": 12,
-                    "rowPadding": 10,
-                    "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelColor": "#383838",
-                    "labelFontWeight":400,
-                },
-
             },
 
             "data": {
@@ -157,13 +147,19 @@ class SeriesParams:
             ret['encoding']['color']['legend'] = None
         else:
             ret['encoding']['color']['legend'] = {
-                'title': 'Legend',
+                'title': '',
                 'shape': 'circle',
             }
-            ret['config'] = {
-                'legend': {
-                    'symbolType': 'circle',
-                }
+            ret['config']['legend']= {
+                'symbolType': 'circle',
+                'titlePadding':20,
+                "padding": 15,
+                "offset": 0,
+                "labelFontSize": 12,
+                "rowPadding": 10,
+                "labelFont": "Nunito Sans, Helvetica, sans-serif",
+                "labelColor": "#383838",
+                "labelFontWeight":400,
             }
 
         return ret
