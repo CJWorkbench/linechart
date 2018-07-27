@@ -81,79 +81,11 @@ class SeriesParams:
 
         ret = {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
-            "background": "white",
-            "title": {
-                "text": self.title,
-                "color": '#383838',
-                "font": "Nunito Sans, Helvetica, sans-serif",
-                "fontSize": 20,
-                "fontWeight": "normal"
-            },
+            "title": self.title,
 
             "data": {
                 "values": self.to_vega_data_values(),
             },
-
-            "scales": [
-                {
-                    "name": "xscale",
-                    "type": "band",
-                    "domain": {"data": "table", "field": self.x_series.name},
-                    "range": "width",
-                    "padding": 0.15,
-                },
-                {
-                    "name": "yscale",
-                    "type": "linear",
-                    "domain": {"data": "table", "field": "y"},
-                    "range": "height",
-                    "zero": True,
-                    "nice": True,
-                },
-                {
-                    "name": "color",
-                    "type": "ordinal",
-                    "domain": {"data": "table", "field": "bar"},
-                    "range": [ys.color for ys in self.y_columns],
-                }
-            ],
-
-            "axes": [
-                {
-                    "title": self.x_axis_label,
-                    "orient": "bottom",
-                    "scale": "xscale",
-                    "tickSize": 0,
-                    "titlePadding": 15,
-                    "titleColor": "#686768",
-                    "titleFontSize": 14,
-                    "titleFontWeight": 100,
-                    "titleFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFontWeight":400,
-                    "labelPadding": 8,
-                    "labelFontSize": 12,
-                    "labelColor":"#383838",
-                },
-                {
-                    "title": self.y_axis_label,
-                    "orient": "left",
-                    "scale": "yscale",
-                    "tickSize": 3,
-                    "labelOverlap": True,
-                    "titleFontSize": 14,
-                    "titleColor": "#686768",
-                    "titleFontWeight": 100,
-                    "titleFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelColor": "#383838",
-                    "labelFontWeight":400,
-                    "titlePadding": 15,
-                    "labelPadding": 10,
-                    "labelFontSize": 11,
-                },
-            ],
-
 
             "mark": {
                 "type": "line",
@@ -189,16 +121,9 @@ class SeriesParams:
             ret['encoding']['color']['legend'] = None
         else:
             ret['encoding']['color']['legend'] = {
-                "fill": "color",
-                "symbolType": "circle",
-                "padding": 15,
-                "offset": 0,
-                "labelFontSize": 12,
-                "rowPadding": 10,
-                "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                "labelColor": "#383838",
-                "labelFontWeight":400,
-            },
+                'title': 'Legend',
+                'shape': 'circle',
+            }
             ret['config'] = {
                 'legend': {
                     'symbolType': 'circle',
