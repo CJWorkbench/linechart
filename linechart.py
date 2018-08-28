@@ -77,64 +77,62 @@ class Chart:
             x_data_type = 'quantitative'
 
         ret = {
-            "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
-            "title": self.title,
-            "config":{
-
-                "title": {
-                    "offset": 15,
-                    "color": "#383838",
-                    "font": "Nunito Sans, Helvetica, sans-serif",
-                    "fontSize": 20,
-                    "fontWeight": "normal",
+            '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
+            'title': self.title,
+            'config': {
+                'title': {
+                    'offset': 15,
+                    'color': '#383838',
+                    'font': 'Nunito Sans, Helvetica, sans-serif',
+                    'fontSize': 20,
+                    'fontWeight': 'normal',
                 },
 
-                "axis": {
-                    "tickSize": 3,
-                    "titlePadding": 20,
-                    "titleFontSize": 15,
-                    "titleFontWeight": 100,
-                    "titleColor": "#686768",
-                    "titleFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFontWeight": 400,
-                    "labelColor": "#383838",
-                    "labelFontSize": 12,
-                    "labelPadding": 10,
-                    "labelOverlap":"true",
-                    "gridOpacity": .5,
+                'axis': {
+                    'tickSize': 3,
+                    'titlePadding': 20,
+                    'titleFontSize': 15,
+                    'titleFontWeight': 100,
+                    'titleColor': '#686768',
+                    'titleFont': 'Nunito Sans, Helvetica, sans-serif',
+                    'labelFont': 'Nunito Sans, Helvetica, sans-serif',
+                    'labelFontWeight': 400,
+                    'labelColor': '#383838',
+                    'labelFontSize': 12,
+                    'labelPadding': 10,
+                    'gridOpacity': .5,
                 },
             },
 
-            "data": {
-                "values": self.to_vega_data_values(),
+            'data': {
+                'values': self.to_vega_data_values(),
             },
 
-            "mark": {
-                "type": "line",
-                "point": {
-                    "shape": "circle",
+            'mark': {
+                'type': 'line',
+                'point': {
+                    'shape': 'circle',
                 }
             },
 
-            "encoding": {
-                "x": {
-                    "field": self.x_series.name,
-                    "type": x_data_type,
-                    "axis": {"title": self.x_axis_label},
+            'encoding': {
+                'x': {
+                    'field': self.x_series.name,
+                    'type': x_data_type,
+                    'axis': {'title': self.x_axis_label},
                 },
 
-                "y": {
-                    "field": "y",
-                    "type": "quantitative",
-                    "axis": {"title": self.y_axis_label},
+                'y': {
+                    'field': 'y',
+                    'type': 'quantitative',
+                    'axis': {'title': self.y_axis_label},
                 },
 
-                "color": {
-                    "field": "line",
-                    "type": "nominal",
-                    "scale": {
-                        "range": [y.color for y in self.y_columns],
+                'color': {
+                    'field': 'line',
+                    'type': 'nominal',
+                    'scale': {
+                        'range': [y.color for y in self.y_columns],
                     },
                 },
             },
@@ -147,16 +145,16 @@ class Chart:
                 'title': '',
                 'shape': 'circle',
             }
-            ret['config']['legend']= {
+            ret['config']['legend'] = {
                 'symbolType': 'circle',
-                'titlePadding':20,
-                "padding": 15,
-                "offset": 0,
-                "labelFontSize": 12,
-                "rowPadding": 10,
-                "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                "labelColor": "#383838",
-                "labelFontWeight":400,
+                'titlePadding': 20,
+                'padding': 15,
+                'offset': 0,
+                'labelFontSize': 12,
+                'rowPadding': 10,
+                'labelFont': 'Nunito Sans, Helvetica, sans-serif',
+                'labelColor': '#383838',
+                'labelFontWeight': 'normal',
             }
 
         return ret
@@ -178,7 +176,7 @@ def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
         return x_floats
     else:
         # TODO:
-        # * test "UTC" does what we expect
+        # * test 'UTC' does what we expect
         # * test errors='coerce'
         # * test infer_datetime_format
         x_dates = pandas.to_datetime(series, utc=True, errors='coerce',
@@ -216,8 +214,8 @@ class Form:
             params.get('y_columns', 'null')
         )
         return Form(title=title, x_axis_label=x_axis_label,
-                          y_axis_label=y_axis_label, x_column=x_column,
-                          x_type=x_type, y_columns=y_columns)
+                    y_axis_label=y_axis_label, x_column=x_column,
+                    x_type=x_type, y_columns=y_columns)
 
     def make_chart(self, table: pandas.DataFrame) -> Chart:
         """
@@ -312,5 +310,5 @@ def render(table, params):
     except ValueError as err:
         return (table, str(err), {'error': str(err)})
 
-    json_dict = valid_params.to_vega()
+    json_dict = chart.to_vega()
     return (table, '', json_dict)
