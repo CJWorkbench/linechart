@@ -4,9 +4,6 @@ from typing import Any, Dict, List
 import pandas
 
 
-MaxNBars = 500
-
-
 class GentleValueError(ValueError):
     """
     A ValueError that should not display in red to the user.
@@ -234,18 +231,12 @@ class UserParams:
         [ ] Missing Y values are omitted
         [ ] Error if no Y columns chosen
         [ ] Error if no rows
-        [ ] Error if too many bars
+        [ ] Error if too many values
         [ ] Error if a Y column is missing
         [ ] Error if a Y column is the X column
         [ ] Error if a Y column has fewer than 1 non-missing value
         [ ] Default title, X and Y axis labels
         """
-        if len(table.index) >= MaxNBars:
-            raise ValueError(
-                f'Refusing to build column chart with '
-                'more than {MaxNBars} bars'
-            )
-
         if self.x_column not in table.columns:
             raise GentleValueError('Please choose an X-axis column')
         if not self.y_columns:
