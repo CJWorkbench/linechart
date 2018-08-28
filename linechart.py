@@ -33,7 +33,7 @@ class YSeries:
         self.color = color
 
 
-class SeriesParams:
+class Chart:
     """
     Fully-sane parameters. Columns are series.
     """
@@ -189,7 +189,7 @@ def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
         return x_dates
 
 
-class UserParams:
+class Form:
     """
     Parameter dict specified by the user: valid types, unchecked values.
     """
@@ -203,7 +203,7 @@ class UserParams:
         self.y_columns = y_columns
 
     @staticmethod
-    def from_params(params: Dict[str, Any]) -> 'UserParams':
+    def from_dict(params: Dict[str, Any]) -> 'Form':
         title = str(params.get('title', ''))
         x_axis_label = str(params.get('x_axis_label', ''))
         y_axis_label = str(params.get('y_axis_label', ''))
@@ -212,16 +212,16 @@ class UserParams:
             x_type = datetime64
         else:
             x_type = float64
-        y_columns = UserParams.parse_y_columns(
+        y_columns = Form.parse_y_columns(
             params.get('y_columns', 'null')
         )
-        return UserParams(title=title, x_axis_label=x_axis_label,
+        return Form(title=title, x_axis_label=x_axis_label,
                           y_axis_label=y_axis_label, x_column=x_column,
                           x_type=x_type, y_columns=y_columns)
 
-    def validate_with_table(self, table: pandas.DataFrame) -> SeriesParams:
+    def make_chart(self, table: pandas.DataFrame) -> Chart:
         """
-        Create a SeriesParams ready for charting, or raises ValueError.
+        Create a Chart ready for charting, or raises ValueError.
 
         Features ([tested?]):
         [ ] Error if X column is missing
@@ -281,9 +281,9 @@ class UserParams:
         x_axis_label = self.x_axis_label or x_series.name
         y_axis_label = self.y_axis_label or y_columns[0].name
 
-        return SeriesParams(title=title, x_axis_label=x_axis_label,
-                            y_axis_label=y_axis_label, x_series=x_series,
-                            y_columns=y_columns)
+        return Chart(title=title, x_axis_label=x_axis_label,
+                     y_axis_label=y_axis_label, x_series=x_series,
+                     y_columns=y_columns)
 
     @staticmethod
     def parse_y_columns(s):
@@ -304,9 +304,9 @@ class UserParams:
 
 
 def render(table, params):
-    user_params = UserParams.from_params(params)
+    form = Form.from_dict(params)
     try:
-        valid_params = user_params.validate_with_table(table)
+        chart = form.make_chart(table)
     except GentleValueError as err:
         return (table, '', {'error': str(err)})
     except ValueError as err:
