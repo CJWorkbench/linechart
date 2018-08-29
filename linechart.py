@@ -231,13 +231,12 @@ class Form:
         [x] Missing X dates lead to missing records
         [x] Missing X floats lead to missing records
         [x] Missing Y values are omitted
-        [ ] Error if no Y columns chosen
-        [ ] Error if no rows
+        [x] Error if no Y columns chosen
         [ ] Error if too many values
-        [ ] Error if a Y column is missing
-        [ ] Error if a Y column is the X column
-        [ ] Error if a Y column has fewer than 1 non-missing value
-        [ ] Default title, X and Y axis labels
+        [x] Error if a Y column is missing
+        [x] Error if a Y column is the X column
+        [x] Error if a Y column has fewer than 1 non-missing value
+        [x] Default title, X and Y axis labels
         """
         if self.x_column not in table.columns:
             raise GentleValueError('Please choose an X-axis column')
@@ -263,28 +262,29 @@ class Form:
         for ycolumn in self.y_columns:
             if ycolumn.column not in table.columns:
                 raise ValueError(
-                    f'Cannot plot Y-axis column {ycolumn.column} '
+                    f'Cannot plot Y-axis column "{ycolumn.column}" '
                     'because it does not exist'
                 )
             elif ycolumn.column == self.x_column:
                 raise ValueError(
-                    f'You cannot plot Y-axis column {ycolumn.column} '
+                    f'Cannot plot Y-axis column "{ycolumn.column}" '
                     'because it is the X-axis column'
                 )
 
             series = table[ycolumn.column]
             floats = pandas.to_numeric(series, errors='coerce')
 
-            if not floats.count():
+            # Find how many Y values can actually be plotted on the X axis. If
+            # there aren't going to be any Y values on the chart, raise an
+            # error.
+            matches = pandas.DataFrame({'X': x_values, 'Y': floats}).dropna()
+            if not matches['X'].count():
                 raise ValueError(
-                    f'You cannot plot Y-axis column {ycolumn.column} '
-                    'because it nas no numeric data'
+                    f'Cannot plot Y-axis column "{ycolumn.column}" '
+                    'because it has no values'
                 )
 
             y_columns.append(YSeries(floats, ycolumn.column, ycolumn.color))
-
-        if not len(table):
-            raise GentleValueError('no records to plot')
 
         title = self.title or 'Line Chart'
         x_axis_label = self.x_axis_label or x_series.name

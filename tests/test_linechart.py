@@ -9,6 +9,10 @@ from pandas.testing import assert_frame_equal
 from linechart import render, Form, YColumn, GentleValueError
 
 
+# Minimum valid table
+min_table = pd.DataFrame({'A': [1, 2], 'B': [3, 4]}, dtype=np.number)
+
+
 class ConfigTest(unittest.TestCase):
     def assertResult(self, result, expected):
         assert_frame_equal(result[0], expected[0])
@@ -59,9 +63,7 @@ class ConfigTest(unittest.TestCase):
 
     def test_x_numeric(self):
         form = self.build_form(x_column='A', x_type=np.number)
-        table = pd.DataFrame({'A': [1, 2], 'B': [3, 4]},
-                             dtype=np.number)
-        chart = form.make_chart(table)
+        chart = form.make_chart(min_table)
         assert np.array_equal(chart.x_series.series, [1, 2])
 
         vega = chart.to_vega()
@@ -87,8 +89,7 @@ class ConfigTest(unittest.TestCase):
         form = self.build_form(x_column='A', x_type=np.datetime64)
         t1 = datetime.datetime(2018, 8, 29, 13, 39)
         t2 = datetime.datetime(2018, 8, 29, 13, 40)
-        table = pd.DataFrame({'A': [t1, t2], 'B': [3, 4]},
-                             dtype=np.number)
+        table = pd.DataFrame({'A': [t1, t2], 'B': [3, 4]})
         chart = form.make_chart(table)
         assert np.array_equal(
             chart.x_series.series,
@@ -106,9 +107,7 @@ class ConfigTest(unittest.TestCase):
         form = self.build_form(x_column='A', x_type=np.datetime64)
         t1 = datetime.datetime(2018, 8, 29, 13, 39)
         t2 = datetime.datetime(2018, 8, 29, 13, 40)
-        nat = np.datetime64('NaT')
-        table = pd.DataFrame({'A': [t1, nat, t2], 'B': [3, 4, 5]},
-                             dtype=np.number)
+        table = pd.DataFrame({'A': [t1, None, t2], 'B': [3, 4, 5]})
         chart = form.make_chart(table)
         vega = chart.to_vega()
         self.assertEqual(vega['encoding']['x']['type'], 'temporal')
@@ -135,6 +134,53 @@ class ConfigTest(unittest.TestCase):
             {'x': 1, 'line': 'C', 'y': 7.0},
             {'x': 2, 'line': 'C', 'y': 8.0},
         ])
+
+    def test_missing_y_param(self):
+        form = self.build_form(y_columns=[])
+        with self.assertRaisesRegex(
+            GentleValueError,
+            'Please choose a Y-axis column'
+        ):
+            form.make_chart(min_table)
+
+    def test_invalid_y_missing_column(self):
+        form = self.build_form(y_columns=[YColumn('C', '#ababab')])
+        with self.assertRaisesRegex(
+            ValueError,
+            'Cannot plot Y-axis column "C" because it does not exist'
+        ):
+            form.make_chart(min_table)
+
+    def test_invalid_y_same_as_x(self):
+        form = self.build_form(y_columns=[YColumn('A', '#ababab')])
+        with self.assertRaisesRegex(
+            ValueError,
+            'Cannot plot Y-axis column "A" because it is the X-axis column'
+        ):
+            form.make_chart(min_table)
+
+    def test_invalid_y_missing_values(self):
+        form = self.build_form(
+            y_columns=[YColumn('B', '#123456'), YColumn('C', '#234567')]
+        )
+        table = pd.DataFrame({
+            'A': [1, 2, np.nan, np.nan, 5],
+            'B': [4, np.nan, 6, 7, 8],
+            'C': [np.nan, np.nan, 9, 10, np.nan],
+        })
+        with self.assertRaisesRegex(
+            ValueError,
+            'Cannot plot Y-axis column "C" because it has no values'
+        ):
+            form.make_chart(table)
+
+    def test_default_title_and_labels(self):
+        form = self.build_form(title='', x_axis_label='', y_axis_label='')
+        chart = form.make_chart(min_table)
+        vega = chart.to_vega()
+        self.assertEqual(vega['title'], 'Line Chart')
+        self.assertEqual(vega['encoding']['x']['axis']['title'], 'A')
+        self.assertEqual(vega['encoding']['y']['axis']['title'], 'B')
 
     def test_integration_empty_params(self):
         table = pd.DataFrame({'A': [1, 2], 'B': [2, 3]})
