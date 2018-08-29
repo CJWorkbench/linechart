@@ -1,5 +1,6 @@
+import datetime
 import json
-from numpy import datetime64, float64, isnan, isnat, ndarray
+from numpy import datetime64, number, isnan, isnat, ndarray
 from typing import Any, Dict, List
 import pandas
 
@@ -56,9 +57,8 @@ class Chart:
         # We use column names 'x' and f'y{colname}' to prevent conflicts (e.g.,
         # colname='x'). After melt(), we'll drop the 'y' and have what we want.
         if self.x_series.data_type == datetime64:
-            strs = self.x_series.series.astype(str)
-            strs = [s + 'Z' for s in strs]
-            data['x'] = strs
+            datetimes = self.x_series.series.astype(datetime.datetime)
+            data['x'] = [x.isoformat() + 'Z' if x else None for x in datetimes]
         else:
             data['x'] = self.x_series.series
         for y_column in self.y_columns:
@@ -172,7 +172,7 @@ def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
     """
     Convert `series` to `data_type`, setting invalid values to NaN/NaT.
     """
-    if data_type == float64:
+    if data_type == number:
         x_floats = pandas.to_numeric(series, errors='coerce')
         return x_floats
     else:
@@ -182,8 +182,10 @@ def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
         # * test infer_datetime_format
         x_dates = pandas.to_datetime(series, utc=True, errors='coerce',
                                      infer_datetime_format=True)
-        # pandas' dtype is not datetime64; np's is
-        x_dates = x_dates.values.astype(datetime64)
+        # pandas' dtype is not datetime64; np's is.
+        # Also, we use 'ms' instead of 'ns' because 'ms' is compatible with
+        # Python datetime.datetime, meaning we can use .isoformat() later.
+        x_dates = x_dates.values.astype('datetime64[ms]')
         return x_dates
 
 
@@ -209,7 +211,7 @@ class Form:
         if str(params.get('x_data_type')) == '1':
             x_type = datetime64
         else:
-            x_type = float64
+            x_type = number
         y_columns = Form.parse_y_columns(
             params.get('y_columns', 'null')
         )
@@ -226,8 +228,8 @@ class Form:
         [x] Error if X column does not have two values
         [x] Error if X column is all-NaN
         [x] X column can be number or date
-        [ ] Missing X dates lead to missing records
-        [ ] Missing X floats lead to missing records
+        [x] Missing X dates lead to missing records
+        [x] Missing X floats lead to missing records
         [ ] Missing Y values are omitted
         [ ] Error if no Y columns chosen
         [ ] Error if no rows
@@ -244,7 +246,7 @@ class Form:
 
         x_values = _coerce_x_series(table[self.x_column], self.x_type)
         x_min = x_values.min()
-        if ((self.x_type == float64 and isnan(x_min))
+        if ((self.x_type == number and isnan(x_min))
                 or self.x_type == datetime64 and isnat(x_min)):
             raise ValueError(
                 f'Column "{self.x_column}" has no values. '

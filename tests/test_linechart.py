@@ -21,7 +21,7 @@ class ConfigTest(unittest.TestCase):
             'x_axis_label': 'X LABEL',
             'y_axis_label': 'Y LABEL',
             'x_column': 'A',
-            'x_type': np.float64,
+            'x_type': np.number,
             'y_columns': [YColumn('B', '#123456')],
         }
         params.update(kwargs)
@@ -49,7 +49,7 @@ class ConfigTest(unittest.TestCase):
     def test_no_x_values(self):
         form = self.build_form(x_column='A')
         table = pd.DataFrame({'A': [np.nan, np.nan], 'B': [2, 3]},
-                             dtype=np.float64)
+                             dtype=np.number)
         with self.assertRaisesRegex(
             ValueError,
             'Column "A" has no values. '
@@ -58,9 +58,9 @@ class ConfigTest(unittest.TestCase):
             form.make_chart(table)
 
     def test_x_numeric(self):
-        form = self.build_form(x_column='A', x_type=np.float64)
+        form = self.build_form(x_column='A', x_type=np.number)
         table = pd.DataFrame({'A': [1, 2], 'B': [3, 4]},
-                             dtype=np.float64)
+                             dtype=np.number)
         chart = form.make_chart(table)
         assert np.array_equal(chart.x_series.series, [1, 2])
 
@@ -71,12 +71,24 @@ class ConfigTest(unittest.TestCase):
             {'x': 2, 'line': 'B', 'y': 4},
         ])
 
+    def test_x_numeric_drop_na_x(self):
+        form = self.build_form(x_column='A', x_type=np.number)
+        table = pd.DataFrame({'A': [1, np.nan, 3], 'B': [3, 4, 5]},
+                             dtype=np.number)
+        chart = form.make_chart(table)
+        vega = chart.to_vega()
+        self.assertEqual(vega['encoding']['x']['type'], 'quantitative')
+        self.assertEqual(vega['data']['values'], [
+            {'x': 1, 'line': 'B', 'y': 3},
+            {'x': 3, 'line': 'B', 'y': 5},
+        ])
+
     def test_x_datetime(self):
         form = self.build_form(x_column='A', x_type=np.datetime64)
         t1 = datetime.datetime(2018, 8, 29, 13, 39)
         t2 = datetime.datetime(2018, 8, 29, 13, 40)
         table = pd.DataFrame({'A': [t1, t2], 'B': [3, 4]},
-                             dtype=np.float64)
+                             dtype=np.number)
         chart = form.make_chart(table)
         assert np.array_equal(
             chart.x_series.series,
@@ -86,8 +98,23 @@ class ConfigTest(unittest.TestCase):
         vega = chart.to_vega()
         self.assertEqual(vega['encoding']['x']['type'], 'temporal')
         self.assertEqual(vega['data']['values'], [
-            {'x': '2018-08-29T13:39:00.000000000Z', 'line': 'B', 'y': 3},
-            {'x': '2018-08-29T13:40:00.000000000Z', 'line': 'B', 'y': 4},
+            {'x': '2018-08-29T13:39:00Z', 'line': 'B', 'y': 3},
+            {'x': '2018-08-29T13:40:00Z', 'line': 'B', 'y': 4},
+        ])
+
+    def test_x_datetime_drop_na_x(self):
+        form = self.build_form(x_column='A', x_type=np.datetime64)
+        t1 = datetime.datetime(2018, 8, 29, 13, 39)
+        t2 = datetime.datetime(2018, 8, 29, 13, 40)
+        nat = np.datetime64('NaT')
+        table = pd.DataFrame({'A': [t1, nat, t2], 'B': [3, 4, 5]},
+                             dtype=np.number)
+        chart = form.make_chart(table)
+        vega = chart.to_vega()
+        self.assertEqual(vega['encoding']['x']['type'], 'temporal')
+        self.assertEqual(vega['data']['values'], [
+            {'x': '2018-08-29T13:39:00Z', 'line': 'B', 'y': 3},
+            {'x': '2018-08-29T13:40:00Z', 'line': 'B', 'y': 5},
         ])
 
     def test_integration_empty_params(self):
