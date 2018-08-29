@@ -1,5 +1,5 @@
 import json
-from numpy import datetime64, float64, ndarray
+from numpy import datetime64, float64, isnan, isnat, ndarray
 from typing import Any, Dict, List
 import pandas
 
@@ -50,21 +50,23 @@ class Chart:
         Build a dict for Vega's .data.values Array.
 
         Return value is a list of dict records. Each has
-        {x_series.name: 'X Name', 'bar': 'Bar Name', 'y': 1.0}
+        {'x': 'X Name', 'line': 'Line Name', 'y': 1.0}
         """
         data = {}
+        # We use column names 'x' and f'y{colname}' to prevent conflicts (e.g.,
+        # colname='x'). After melt(), we'll drop the 'y' and have what we want.
         if self.x_series.data_type == datetime64:
             strs = self.x_series.series.astype(str)
             strs = [s + 'Z' for s in strs]
-            data[self.x_series.name] = strs
+            data['x'] = strs
         else:
-            data[self.x_series.name] = self.x_series.series
+            data['x'] = self.x_series.series
         for y_column in self.y_columns:
-            data[y_column.name] = y_column.series
+            data['y' + y_column.name] = y_column.series
         dataframe = pandas.DataFrame(data)
-        vertical = dataframe.melt(self.x_series.name, var_name='line',
-                                  value_name='y')
+        vertical = dataframe.melt('x', var_name='line', value_name='y')
         vertical.dropna(inplace=True)
+        vertical['line'] = vertical['line'].str[1:]
         return vertical.to_dict(orient='records')
 
     def to_vega(self) -> Dict[str, Any]:
@@ -117,7 +119,7 @@ class Chart:
 
             'encoding': {
                 'x': {
-                    'field': self.x_series.name,
+                    'field': 'x',
                     'type': x_data_type,
                     'axis': {'title': self.x_axis_label},
                 },
@@ -168,11 +170,10 @@ class YColumn:
 
 def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
     """
-    Convert `series` to `data_type`, replacing erroneous values.
+    Convert `series` to `data_type`, setting invalid values to NaN/NaT.
     """
     if data_type == float64:
         x_floats = pandas.to_numeric(series, errors='coerce')
-        x_floats.fillna(0.0, inplace=True)
         return x_floats
     else:
         # TODO:
@@ -181,7 +182,6 @@ def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
         # * test infer_datetime_format
         x_dates = pandas.to_datetime(series, utc=True, errors='coerce',
                                      infer_datetime_format=True)
-        x_dates.fillna(datetime64(0, 's'), inplace=True)
         # pandas' dtype is not datetime64; np's is
         x_dates = x_dates.values.astype(datetime64)
         return x_dates
@@ -222,10 +222,12 @@ class Form:
         Create a Chart ready for charting, or raises ValueError.
 
         Features ([tested?]):
-        [ ] Error if X column is missing
-        [ ] Error if X column does not have two values
-        [ ] X column can be number or date
-        [ ] Missing dates are coerced to 1970-01-01
+        [x] Error if X column is missing
+        [x] Error if X column does not have two values
+        [x] Error if X column is all-NaN
+        [x] X column can be number or date
+        [ ] Missing X dates lead to missing records
+        [ ] Missing X floats lead to missing records
         [ ] Missing Y values are omitted
         [ ] Error if no Y columns chosen
         [ ] Error if no rows
@@ -241,10 +243,17 @@ class Form:
             raise GentleValueError('Please choose a Y-axis column')
 
         x_values = _coerce_x_series(table[self.x_column], self.x_type)
-        if x_values.min() == x_values.max():
+        x_min = x_values.min()
+        if ((self.x_type == float64 and isnan(x_min))
+                or self.x_type == datetime64 and isnat(x_min)):
             raise ValueError(
-                f'Cannot plot X-axis column {self.x_column} '
-                f'because it only has one {self.x_type.__name__} value'
+                f'Column "{self.x_column}" has no values. '
+                'Please select a column with data.'
+            )
+        if x_min == x_values.max():
+            raise ValueError(
+                f'Column "{self.x_column}" has only 1 value. '
+                'Please select a column with 2 or more values.'
             )
         x_series = XSeries(x_values, self.x_column)
 
