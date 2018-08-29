@@ -193,14 +193,21 @@
 
         const labels = xAxis.querySelectorAll('.role-axis-label text')
         const margin = 3
-        let maxX = 0
+        let maxX = -Infinity
         for (let i = 0; i < labels.length; i++) {
           const label = labels[i]
+          if (label.style.opacity == 0) { // may be str "0"
+            // Hidden label? That means Vega hid it, so we can assume Vega will
+            // prevent any overlaps. Skip the algorithm.
+            return false
+          }
           const rect = label.getBoundingClientRect()
-          const left = rect.x
-          const right = rect.x + rect.width
-          if (maxX + margin > left) return true
-          maxX = right
+          const left = rect.left
+          console.log(maxX + margin, left)
+          if (maxX + margin > left) {
+            return true
+          }
+          maxX = rect.right
         }
         return false
       }
