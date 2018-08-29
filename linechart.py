@@ -230,7 +230,7 @@ class Form:
         [x] X column can be number or date
         [x] Missing X dates lead to missing records
         [x] Missing X floats lead to missing records
-        [ ] Missing Y values are omitted
+        [x] Missing Y values are omitted
         [ ] Error if no Y columns chosen
         [ ] Error if no rows
         [ ] Error if too many values

@@ -117,6 +117,25 @@ class ConfigTest(unittest.TestCase):
             {'x': '2018-08-29T13:40:00Z', 'line': 'B', 'y': 5},
         ])
 
+    def test_drop_missing_y_but_not_x(self):
+        form = self.build_form(x_column='A', x_type=np.number, y_columns=[
+            YColumn('B', '#123456'),
+            YColumn('C', '#234567'),
+        ])
+        table = pd.DataFrame({
+            'A': [1, 2, 3],
+            'B': [4, np.nan, 6],
+            'C': [7, 8, np.nan],
+        })
+        chart = form.make_chart(table)
+        vega = chart.to_vega()
+        self.assertEqual(vega['data']['values'], [
+            {'x': 1, 'line': 'B', 'y': 4.0},
+            {'x': 3, 'line': 'B', 'y': 6.0},
+            {'x': 1, 'line': 'C', 'y': 7.0},
+            {'x': 2, 'line': 'C', 'y': 8.0},
+        ])
+
     def test_integration_empty_params(self):
         table = pd.DataFrame({'A': [1, 2], 'B': [2, 3]})
         result = render(table, {})
