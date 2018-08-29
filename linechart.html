@@ -173,15 +173,16 @@
       function areXAxisLabelsOverlapping () {
         // Assumptions:
         //
-        // x-axis ticks have no height
+        // x-axis ticks have height 3
         // texts are arranged from left to right
 
         let xAxis = null
         const axisTicks = document.querySelectorAll('g.role-axis-tick')
         if (!axisTicks.length) return // we're displaying a message, not a chart
         for (let i = 0; i < axisTicks.length; i++) {
-          if (axisTicks[i].getBoundingClientRect().height === 0) {
+          if (axisTicks[i].getBoundingClientRect().height === 3) {
             xAxis = axisTicks[i].parentNode
+            break
           }
         }
 
@@ -207,7 +208,7 @@
       function slantXAxisLabelsIfNeeded ({ spec, view }) {
         if (areXAxisLabelsOverlapping()) {
           const newSpec = JSON.parse(JSON.stringify(spec))
-          const xAxis = newSpec.axes[0]
+          const xAxis = newSpec.encoding.x.axis
           Object.assign(xAxis, {
             labelAlign: 'right',
             labelBaseline: 'middle',

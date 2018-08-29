@@ -76,10 +76,16 @@ class Chart:
         """
         Build a Vega bar chart or grouped bar chart.
         """
+        x_axis = {'title': self.x_axis_label}
+
         if self.x_series.data_type == datetime64:
             x_data_type = 'temporal'
         elif self.x_series.data_type == object_:
             x_data_type = 'ordinal'
+            x_axis.update({
+                'labelAngle': 0,
+                'labelOverlap': False,
+            })
         else:
             x_data_type = 'quantitative'
 
@@ -126,7 +132,7 @@ class Chart:
                 'x': {
                     'field': 'x',
                     'type': x_data_type,
-                    'axis': {'title': self.x_axis_label},
+                    'axis': x_axis,
                 },
 
                 'y': {
