@@ -1,8 +1,11 @@
 import datetime
 import json
-from numpy import datetime64, number, isnan, isnat, ndarray
+from numpy import array, datetime64, number, isnan, isnat, object_
 from typing import Any, Dict, List
 import pandas
+
+
+MaxNAxisLabels = 300
 
 
 class GentleValueError(ValueError):
@@ -18,13 +21,13 @@ class GentleValueError(ValueError):
 
 
 class XSeries:
-    def __init__(self, series: ndarray, name: str):
-        self.series = series
+    def __init__(self, values: array, name: str):
+        self.values = values
         self.name = name
 
     @property
     def data_type(self):
-        return self.series.dtype.type
+        return self.values.dtype.type
 
 
 class YSeries:
@@ -57,10 +60,10 @@ class Chart:
         # We use column names 'x' and f'y{colname}' to prevent conflicts (e.g.,
         # colname='x'). After melt(), we'll drop the 'y' and have what we want.
         if self.x_series.data_type == datetime64:
-            datetimes = self.x_series.series.astype(datetime.datetime)
+            datetimes = self.x_series.values.astype(datetime.datetime)
             data['x'] = [x.isoformat() + 'Z' if x else None for x in datetimes]
         else:
-            data['x'] = self.x_series.series
+            data['x'] = self.x_series.values
         for y_column in self.y_columns:
             data['y' + y_column.name] = y_column.series
         dataframe = pandas.DataFrame(data)
@@ -75,6 +78,8 @@ class Chart:
         """
         if self.x_series.data_type == datetime64:
             x_data_type = 'temporal'
+        elif self.x_series.data_type == object_:
+            x_data_type = 'ordinal'
         else:
             x_data_type = 'quantitative'
 
@@ -168,13 +173,20 @@ class YColumn:
         self.color = color
 
 
-def _coerce_x_series(series: pandas.Series, data_type: type) -> pandas.Series:
+def _coerce_x_series(series: pandas.Series, data_type: type) -> array:
     """
     Convert `series` to `data_type`, setting invalid values to NaN/NaT.
+
+    This returns a numpy.array because we have logic that expects numpy dtypes,
+    not pandas dtypes.
     """
     if data_type == number:
         x_floats = pandas.to_numeric(series, errors='coerce')
-        return x_floats
+        return x_floats.values
+    elif data_type == object_:
+        x_strings = series.astype(str)
+        x_strings[series.isna()] = None
+        return x_strings.values
     else:
         # TODO:
         # * test 'UTC' does what we expect
@@ -210,6 +222,8 @@ class Form:
         x_column = str(params.get('x_column', ''))
         if str(params.get('x_data_type')) == '1':
             x_type = datetime64
+        elif str(params.get('x_data_type')) == '2':
+            x_type = object_
         else:
             x_type = number
         y_columns = Form.parse_y_columns(
@@ -219,44 +233,68 @@ class Form:
                     y_axis_label=y_axis_label, x_column=x_column,
                     x_type=x_type, y_columns=y_columns)
 
-    def make_chart(self, table: pandas.DataFrame) -> Chart:
+    def _make_x_series(self, table: pandas.DataFrame) -> XSeries:
         """
-        Create a Chart ready for charting, or raises ValueError.
-
-        Features ([tested?]):
-        [x] Error if X column is missing
-        [x] Error if X column does not have two values
-        [x] Error if X column is all-NaN
-        [x] X column can be number or date
-        [x] Missing X dates lead to missing records
-        [x] Missing X floats lead to missing records
-        [x] Missing Y values are omitted
-        [x] Error if no Y columns chosen
-        [ ] Error if too many values
-        [x] Error if a Y column is missing
-        [x] Error if a Y column is the X column
-        [x] Error if a Y column has fewer than 1 non-missing value
-        [x] Default title, X and Y axis labels
+        Create an XSeries ready for charting, or raise ValueError.
         """
         if self.x_column not in table.columns:
             raise GentleValueError('Please choose an X-axis column')
-        if not self.y_columns:
-            raise GentleValueError('Please choose a Y-axis column')
 
         x_values = _coerce_x_series(table[self.x_column], self.x_type)
-        x_min = x_values.min()
-        if ((self.x_type == number and isnan(x_min))
-                or self.x_type == datetime64 and isnat(x_min)):
+        if self.x_type == object_:
+            nulls = x_values == array(None)
+        elif self.x_type == number:
+            nulls = isnan(x_values)
+        else:
+            nulls = isnat(x_values)
+        safe_x_values = x_values[~nulls]  # so we can min(), len(), etc
+
+        if self.x_type == object_ and len(safe_x_values) > MaxNAxisLabels:
+            raise ValueError(
+                f'Column "{self.x_column}" has {len(safe_x_values)} '
+                'text values. We cannot fit them all on the X axis. '
+                'Please change the input table to have 10 or fewer rows, or '
+                f'convert "{self.x_column}" to number or date.'
+            )
+
+        if not len(safe_x_values):
             raise ValueError(
                 f'Column "{self.x_column}" has no values. '
                 'Please select a column with data.'
             )
-        if x_min == x_values.max():
+        if self.x_type != object_ and not len(safe_x_values[safe_x_values !=
+                                                            safe_x_values[0]]):
             raise ValueError(
                 f'Column "{self.x_column}" has only 1 value. '
                 'Please select a column with 2 or more values.'
             )
+
         x_series = XSeries(x_values, self.x_column)
+        return x_series
+
+    def make_chart(self, table: pandas.DataFrame) -> Chart:
+        """
+        Create a Chart ready for charting, or raise ValueError.
+
+        Features:
+        * Error if X column is missing
+        * Error if X column does not have two values
+        * Error if X column is all-NaN
+        * Error if too many X values in text mode (since we can't chart them)
+        * X column can be number or date
+        * Missing X dates lead to missing records
+        * Missing X floats lead to missing records
+        * Missing Y values are omitted
+        * Error if no Y columns chosen
+        * Error if a Y column is missing
+        * Error if a Y column is the X column
+        * Error if a Y column has fewer than 1 non-missing value
+        * Default title, X and Y axis labels
+        """
+        x_series = self._make_x_series(table)
+        x_values = x_series.values
+        if not self.y_columns:
+            raise GentleValueError('Please choose a Y-axis column')
 
         y_columns = []
         for ycolumn in self.y_columns:

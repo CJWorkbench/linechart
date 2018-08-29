@@ -64,7 +64,7 @@ class ConfigTest(unittest.TestCase):
     def test_x_numeric(self):
         form = self.build_form(x_column='A', x_type=np.number)
         chart = form.make_chart(min_table)
-        assert np.array_equal(chart.x_series.series, [1, 2])
+        assert np.array_equal(chart.x_series.values, [1, 2])
 
         vega = chart.to_vega()
         self.assertEqual(vega['encoding']['x']['type'], 'quantitative')
@@ -85,6 +85,42 @@ class ConfigTest(unittest.TestCase):
             {'x': 3, 'line': 'B', 'y': 5},
         ])
 
+    def test_x_text(self):
+        form = self.build_form(x_column='A', x_type=np.object_)
+        chart = form.make_chart(pd.DataFrame({'A': ['a', 'b'], 'B': [1, 2]}))
+        assert np.array_equal(chart.x_series.values, ['a', 'b'])
+
+        vega = chart.to_vega()
+        self.assertEqual(vega['encoding']['x']['type'], 'ordinal')
+        self.assertEqual(vega['data']['values'], [
+            {'x': 'a', 'line': 'B', 'y': 1},
+            {'x': 'b', 'line': 'B', 'y': 2},
+        ])
+
+    def test_x_text_drop_na_x(self):
+        form = self.build_form(x_column='A', x_type=np.object_)
+        table = pd.DataFrame({'A': ['a', None, 'c'], 'B': [1, 2, 3]})
+        chart = form.make_chart(table)
+        assert np.array_equal(chart.x_series.values, ['a', None, 'c'])
+
+        vega = chart.to_vega()
+        self.assertEqual(vega['encoding']['x']['type'], 'ordinal')
+        self.assertEqual(vega['data']['values'], [
+            {'x': 'a', 'line': 'B', 'y': 1},
+            {'x': 'c', 'line': 'B', 'y': 3},
+        ])
+
+    def test_x_text_too_many_values(self):
+        form = self.build_form(x_column='A', x_type=np.object_)
+        table = pd.DataFrame({'A': ['a'] * 301, 'B': [1] * 301})
+        with self.assertRaisesRegex(
+            ValueError,
+            'Column "A" has 301 text values. We cannot fit them all on '
+            'the X axis. Please change the input table to have 10 or fewer '
+            'rows, or convert "A" to number or date.'
+        ):
+            form.make_chart(table)
+
     def test_x_datetime(self):
         form = self.build_form(x_column='A', x_type=np.datetime64)
         t1 = datetime.datetime(2018, 8, 29, 13, 39)
@@ -92,7 +128,7 @@ class ConfigTest(unittest.TestCase):
         table = pd.DataFrame({'A': [t1, t2], 'B': [3, 4]})
         chart = form.make_chart(table)
         assert np.array_equal(
-            chart.x_series.series,
+            chart.x_series.values,
             np.array([t1, t2], dtype='datetime64[ns]')
         )
 
