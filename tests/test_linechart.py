@@ -209,6 +209,19 @@ class ConfigTest(unittest.TestCase):
         ):
             form.make_chart(table)
 
+    def test_invalid_y_not_numeric(self):
+        form = self.build_form(y_columns=[YColumn('B', '#123456')])
+        table = pd.DataFrame({
+            'A': [1, 2, 3],
+            'B': ['a', 'b', 'c'],
+        })
+        with self.assertRaisesRegex(
+            ValueError,
+            'Cannot plot Y-axis column "B" because it is not numeric. '
+            'Convert it to a number before plotting it.'
+        ):
+            form.make_chart(table)
+
     def test_default_title_and_labels(self):
         form = self.build_form(title='', x_axis_label='', y_axis_label='')
         chart = form.make_chart(min_table)

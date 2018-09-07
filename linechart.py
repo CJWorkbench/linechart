@@ -299,19 +299,25 @@ class Form:
                 )
 
             series = table[ycolumn.column]
-            floats = pandas.to_numeric(series, errors='coerce')
+
+            if not is_numeric_dtype(series.dtype):
+                raise ValueError(
+                    f'Cannot plot Y-axis column "{ycolumn.column}" '
+                    'because it is not numeric. '
+                    'Convert it to a number before plotting it.'
+                )
 
             # Find how many Y values can actually be plotted on the X axis. If
             # there aren't going to be any Y values on the chart, raise an
             # error.
-            matches = pandas.DataFrame({'X': x_values, 'Y': floats}).dropna()
+            matches = pandas.DataFrame({'X': x_values, 'Y': series}).dropna()
             if not matches['X'].count():
                 raise ValueError(
                     f'Cannot plot Y-axis column "{ycolumn.column}" '
                     'because it has no values'
                 )
 
-            y_columns.append(YSeries(floats, ycolumn.column, ycolumn.color))
+            y_columns.append(YSeries(series, ycolumn.column, ycolumn.color))
 
         title = self.title or 'Line Chart'
         x_axis_label = self.x_axis_label or x_series.name
