@@ -1,11 +1,22 @@
 import datetime
 import json
-from numpy import array, datetime64, number, isnan, isnat, object_
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import pandas
+from pandas.api.types import is_numeric_dtype, is_datetime64_dtype
 
 
 MaxNAxisLabels = 300
+
+
+def _is_text(series):
+    return hasattr(series, 'cat') or series.dtype == object
+
+
+def _format_datetime(dt: Optional[datetime.datetime]) -> Optional[str]:
+    if dt is pandas.NaT:
+        return None
+    else:
+        return dt.isoformat() + 'Z'
 
 
 class GentleValueError(ValueError):
@@ -21,13 +32,33 @@ class GentleValueError(ValueError):
 
 
 class XSeries:
-    def __init__(self, values: array, name: str):
+    def __init__(self, values: pandas.Series, name: str):
         self.values = values
         self.name = name
 
     @property
-    def data_type(self):
-        return self.values.dtype.type
+    def vega_data_type(self) -> str:
+        if is_datetime64_dtype(self.values.dtype):
+            return 'temporal'
+        elif is_numeric_dtype(self.values.dtype):
+            return 'quantitative'
+        else:
+            return 'ordinal'
+
+    @property
+    def json_compatible_values(self) -> pandas.Series:
+        """
+        Array of str or int or float values for the X axis of the chart.
+
+        In particular: datetime64 values will be converted to str.
+        """
+        if is_datetime64_dtype(self.values.dtype):
+            return self.values \
+                    .astype(datetime.datetime) \
+                    .apply(_format_datetime) \
+                    .values
+        else:
+            return self.values
 
 
 class YSeries:
@@ -38,9 +69,7 @@ class YSeries:
 
 
 class Chart:
-    """
-    Fully-sane parameters. Columns are series.
-    """
+    """Fully-sane parameters. Columns are series."""
     def __init__(self, *, title: str, x_axis_label: str, y_axis_label: str,
                  x_series: XSeries, y_columns: List[YSeries]):
         self.title = title
@@ -56,38 +85,31 @@ class Chart:
         Return value is a list of dict records. Each has
         {'x': 'X Name', 'line': 'Line Name', 'y': 1.0}
         """
-        data = {}
         # We use column names 'x' and f'y{colname}' to prevent conflicts (e.g.,
-        # colname='x'). After melt(), we'll drop the 'y' and have what we want.
-        if self.x_series.data_type == datetime64:
-            datetimes = self.x_series.values.astype(datetime.datetime)
-            data['x'] = [x.isoformat() + 'Z' if x else None for x in datetimes]
-        else:
-            data['x'] = self.x_series.values
+        # colname='x'). After melt(), we'll drop the 'y' prefix.
+        data = {
+            'x': self.x_series.json_compatible_values,
+        }
         for y_column in self.y_columns:
             data['y' + y_column.name] = y_column.series
         dataframe = pandas.DataFrame(data)
         vertical = dataframe.melt('x', var_name='line', value_name='y')
         vertical.dropna(inplace=True)
-        vertical['line'] = vertical['line'].str[1:]
+        vertical['line'] = vertical['line'].str[1:]  # drop 'y' prefix
         return vertical.to_dict(orient='records')
 
     def to_vega(self) -> Dict[str, Any]:
         """
         Build a Vega bar chart or grouped bar chart.
         """
-        x_axis = {'title': self.x_axis_label}
-
-        if self.x_series.data_type == datetime64:
-            x_data_type = 'temporal'
-        elif self.x_series.data_type == object_:
-            x_data_type = 'ordinal'
+        x_axis = {
+            'title': self.x_axis_label
+        }
+        if self.x_series.vega_data_type == 'ordinal':
             x_axis.update({
                 'labelAngle': 0,
                 'labelOverlap': False,
             })
-        else:
-            x_data_type = 'quantitative'
 
         ret = {
             '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
@@ -131,7 +153,7 @@ class Chart:
             'encoding': {
                 'x': {
                     'field': 'x',
-                    'type': x_data_type,
+                    'type': self.x_series.vega_data_type,
                     'axis': x_axis,
                 },
 
@@ -179,45 +201,16 @@ class YColumn:
         self.color = color
 
 
-def _coerce_x_series(series: pandas.Series, data_type: type) -> array:
-    """
-    Convert `series` to `data_type`, setting invalid values to NaN/NaT.
-
-    This returns a numpy.array because we have logic that expects numpy dtypes,
-    not pandas dtypes.
-    """
-    if data_type == number:
-        x_floats = pandas.to_numeric(series, errors='coerce')
-        return x_floats.values
-    elif data_type == object_:
-        x_strings = series.astype(str)
-        x_strings[series.isna()] = None
-        return x_strings.values
-    else:
-        # TODO:
-        # * test 'UTC' does what we expect
-        # * test errors='coerce'
-        # * test infer_datetime_format
-        x_dates = pandas.to_datetime(series, utc=True, errors='coerce',
-                                     infer_datetime_format=True)
-        # pandas' dtype is not datetime64; np's is.
-        # Also, we use 'ms' instead of 'ns' because 'ms' is compatible with
-        # Python datetime.datetime, meaning we can use .isoformat() later.
-        x_dates = x_dates.values.astype('datetime64[ms]')
-        return x_dates
-
-
 class Form:
     """
     Parameter dict specified by the user: valid types, unchecked values.
     """
     def __init__(self, *, title: str, x_axis_label: str, y_axis_label: str,
-                 x_column: str, x_type: type, y_columns: List[YColumn]):
+                 x_column: str, y_columns: List[YColumn]):
         self.title = title
         self.x_axis_label = x_axis_label
         self.y_axis_label = y_axis_label
         self.x_column = x_column
-        self.x_type = x_type
         self.y_columns = y_columns
 
     @staticmethod
@@ -226,18 +219,12 @@ class Form:
         x_axis_label = str(params.get('x_axis_label', ''))
         y_axis_label = str(params.get('y_axis_label', ''))
         x_column = str(params.get('x_column', ''))
-        if str(params.get('x_data_type')) == '1':
-            x_type = datetime64
-        elif str(params.get('x_data_type')) == '2':
-            x_type = object_
-        else:
-            x_type = number
         y_columns = Form.parse_y_columns(
             params.get('y_columns', 'null')
         )
         return Form(title=title, x_axis_label=x_axis_label,
                     y_axis_label=y_axis_label, x_column=x_column,
-                    x_type=x_type, y_columns=y_columns)
+                    y_columns=y_columns)
 
     def _make_x_series(self, table: pandas.DataFrame) -> XSeries:
         """
@@ -246,16 +233,12 @@ class Form:
         if self.x_column not in table.columns:
             raise GentleValueError('Please choose an X-axis column')
 
-        x_values = _coerce_x_series(table[self.x_column], self.x_type)
-        if self.x_type == object_:
-            nulls = x_values == array(None)
-        elif self.x_type == number:
-            nulls = isnan(x_values)
-        else:
-            nulls = isnat(x_values)
+        series = table[self.x_column]
+        nulls = series.isna().values
+        x_values = table[self.x_column]
         safe_x_values = x_values[~nulls]  # so we can min(), len(), etc
 
-        if self.x_type == object_ and len(safe_x_values) > MaxNAxisLabels:
+        if _is_text(x_values) and len(safe_x_values) > MaxNAxisLabels:
             raise ValueError(
                 f'Column "{self.x_column}" has {len(safe_x_values)} '
                 'text values. We cannot fit them all on the X axis. '
@@ -268,8 +251,8 @@ class Form:
                 f'Column "{self.x_column}" has no values. '
                 'Please select a column with data.'
             )
-        if self.x_type != object_ and not len(safe_x_values[safe_x_values !=
-                                                            safe_x_values[0]]):
+
+        if not len(safe_x_values[safe_x_values != safe_x_values[0]]):
             raise ValueError(
                 f'Column "{self.x_column}" has only 1 value. '
                 'Please select a column with 2 or more values.'

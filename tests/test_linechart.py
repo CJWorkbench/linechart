@@ -25,7 +25,6 @@ class ConfigTest(unittest.TestCase):
             'x_axis_label': 'X LABEL',
             'y_axis_label': 'Y LABEL',
             'x_column': 'A',
-            'x_type': np.number,
             'y_columns': [YColumn('B', '#123456')],
         }
         params.update(kwargs)
@@ -62,7 +61,7 @@ class ConfigTest(unittest.TestCase):
             form.make_chart(table)
 
     def test_x_numeric(self):
-        form = self.build_form(x_column='A', x_type=np.number)
+        form = self.build_form(x_column='A')
         chart = form.make_chart(min_table)
         assert np.array_equal(chart.x_series.values, [1, 2])
 
@@ -74,7 +73,7 @@ class ConfigTest(unittest.TestCase):
         ])
 
     def test_x_numeric_drop_na_x(self):
-        form = self.build_form(x_column='A', x_type=np.number)
+        form = self.build_form(x_column='A')
         table = pd.DataFrame({'A': [1, np.nan, 3], 'B': [3, 4, 5]},
                              dtype=np.number)
         chart = form.make_chart(table)
@@ -86,7 +85,7 @@ class ConfigTest(unittest.TestCase):
         ])
 
     def test_x_text(self):
-        form = self.build_form(x_column='A', x_type=np.object_)
+        form = self.build_form(x_column='A')
         chart = form.make_chart(pd.DataFrame({'A': ['a', 'b'], 'B': [1, 2]}))
         assert np.array_equal(chart.x_series.values, ['a', 'b'])
 
@@ -98,7 +97,7 @@ class ConfigTest(unittest.TestCase):
         ])
 
     def test_x_text_drop_na_x(self):
-        form = self.build_form(x_column='A', x_type=np.object_)
+        form = self.build_form(x_column='A')
         table = pd.DataFrame({'A': ['a', None, 'c'], 'B': [1, 2, 3]})
         chart = form.make_chart(table)
         assert np.array_equal(chart.x_series.values, ['a', None, 'c'])
@@ -111,7 +110,7 @@ class ConfigTest(unittest.TestCase):
         ])
 
     def test_x_text_too_many_values(self):
-        form = self.build_form(x_column='A', x_type=np.object_)
+        form = self.build_form(x_column='A')
         table = pd.DataFrame({'A': ['a'] * 301, 'B': [1] * 301})
         with self.assertRaisesRegex(
             ValueError,
@@ -122,14 +121,14 @@ class ConfigTest(unittest.TestCase):
             form.make_chart(table)
 
     def test_x_datetime(self):
-        form = self.build_form(x_column='A', x_type=np.datetime64)
+        form = self.build_form(x_column='A')
         t1 = datetime.datetime(2018, 8, 29, 13, 39)
         t2 = datetime.datetime(2018, 8, 29, 13, 40)
         table = pd.DataFrame({'A': [t1, t2], 'B': [3, 4]})
         chart = form.make_chart(table)
         assert np.array_equal(
             chart.x_series.values,
-            np.array([t1, t2], dtype='datetime64[ns]')
+            np.array([t1, t2], dtype='datetime64[ms]')
         )
 
         vega = chart.to_vega()
@@ -140,7 +139,7 @@ class ConfigTest(unittest.TestCase):
         ])
 
     def test_x_datetime_drop_na_x(self):
-        form = self.build_form(x_column='A', x_type=np.datetime64)
+        form = self.build_form(x_column='A')
         t1 = datetime.datetime(2018, 8, 29, 13, 39)
         t2 = datetime.datetime(2018, 8, 29, 13, 40)
         table = pd.DataFrame({'A': [t1, None, t2], 'B': [3, 4, 5]})
@@ -153,7 +152,7 @@ class ConfigTest(unittest.TestCase):
         ])
 
     def test_drop_missing_y_but_not_x(self):
-        form = self.build_form(x_column='A', x_type=np.number, y_columns=[
+        form = self.build_form(x_column='A', y_columns=[
             YColumn('B', '#123456'),
             YColumn('C', '#234567'),
         ])

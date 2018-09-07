@@ -26,14 +26,6 @@
       "placeholder": "Select X-Axis Column"
     },
     {
-      "name": "",
-      "id_name": "x_data_type",
-      "type": "menu",
-      "placeholder": "Select X-Axis Data Type",
-      "menu_items": "Numbers|Dates (ISO 8601-formatted)|Text",
-      "default": "0"
-    },
-    {
       "name": "Y axis",
       "id_name": "y_axis_label",
       "type": "string",
