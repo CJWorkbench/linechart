@@ -5,7 +5,7 @@
   "icon" : "linechart",
   "description" : "Create a line chart.",
   "html_output": true,
-  "help_url":"modules/visualization/column-and-line-charts",
+  "help_url":"modules/visualization/line-chart",
   "parameters": [
     {
       "name": "",
