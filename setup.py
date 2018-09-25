@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(
-    name='histogram',
+    name='linechart',
     version='0.0.1',
     description='Present data series in a line chart',
     author='Adam Hooper',
