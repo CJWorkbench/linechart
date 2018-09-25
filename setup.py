@@ -8,7 +8,7 @@ setup(
     description='Present data series in a line chart',
     author='Adam Hooper',
     author_email='adam@adamhooper.com',
-    url='https://github.com/CJWorkbench/histogram',
+    url='https://github.com/CJWorkbench/linechart',
     packages=[''],
     py_modules=['linechart'],
     install_requires=['pandas==0.23.1']
