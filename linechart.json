@@ -9,6 +9,18 @@
   "parameters": [
     {
       "name": "",
+      "id_name": "x_column",
+      "type": "column",
+      "placeholder": "Select column"
+    }, 
+    {
+      "name": "Columns",
+      "id_name": "y_columns",
+      "type": "custom",
+      "placeholder": "Select column"
+    },
+    {
+      "name": "",
       "id_name": "title",
       "type": "string",
       "placeholder": "Chart title"
@@ -20,22 +32,10 @@
       "placeholder": "Label"
     },
     {
-      "name": "",
-      "id_name": "x_column",
-      "type": "column",
-      "placeholder": "Select column"
-    },
-    {
       "name": "Y axis",
       "id_name": "y_axis_label",
       "type": "string",
       "placeholder": "Label"
-    },
-    {
-      "name": "Columns",
-      "id_name": "y_columns",
-      "type": "custom",
-      "placeholder": "Select column"
     }
   ]
 }
