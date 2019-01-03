@@ -30,7 +30,7 @@
       "id_name": "y_axis_label",
       "type": "string",
       "placeholder": "Label"
-    }
+    },
     {
       "name": "",
       "id_name": "title",
