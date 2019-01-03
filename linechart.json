@@ -26,7 +26,7 @@
       "placeholder": "Select column"
     },
     {
-      "name": "",
+      "name": "Y Axis",
       "id_name": "y_axis_label",
       "type": "string",
       "placeholder": "Label"
