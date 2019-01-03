@@ -8,21 +8,21 @@
   "help_url":"modules/visualize/line-chart",
   "parameters": [
     {
-      "name": "X axis",
-      "id_name": "x_column",
-      "type": "column",
-      "placeholder": "Select column"
-    },
-     {
       "name": "",
+      "id_name": "title",
+      "type": "string",
+      "placeholder": "Chart title"
+    },
+    {
+      "name": "X axis",
       "id_name": "x_axis_label",
       "type": "string",
       "placeholder": "Label"
     },
     {
-      "name": "Y Axis",
-      "id_name": "y_columns",
-      "type": "custom",
+      "name": "",
+      "id_name": "x_column",
+      "type": "column",
       "placeholder": "Select column"
     },
     {
@@ -32,10 +32,10 @@
       "placeholder": "Label"
     },
     {
-      "name": "",
-      "id_name": "title",
-      "type": "string",
-      "placeholder": "Chart title"
+      "name": "Column",
+      "id_name": "y_columns",
+      "type": "custom",
+      "placeholder": "Select column"
     }
   ]
 }
