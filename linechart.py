@@ -167,7 +167,7 @@ class Chart:
                     'field': 'line',
                     'type': 'nominal',
                     'scale': {
-                        'domain': [y.column for y in self.y_columns],
+                        'domain': [y.name for y in self.y_columns],
                         'range': [y.color for y in self.y_columns],
                     },
                 },
