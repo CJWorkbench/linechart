@@ -49,6 +49,16 @@ class ConfigTest(unittest.TestCase):
         ):
             form.make_chart(table)
 
+    def test_only_one_x_value_not_at_index_0(self):
+        form = self.build_form(x_column='A')
+        table = pd.DataFrame({'A': [np.nan, 1], 'B': [2, 3]})
+        with self.assertRaisesRegex(
+            ValueError,
+            'Column "A" has only 1 value. '
+            'Please select a column with 2 or more values.'
+        ):
+            form.make_chart(table)
+
     def test_no_x_values(self):
         form = self.build_form(x_column='A')
         table = pd.DataFrame({'A': [np.nan, np.nan], 'B': [2, 3]},
@@ -259,4 +269,4 @@ class ConfigTest(unittest.TestCase):
         self.assertIn('"X LABEL"', text)
         self.assertIn('"Y LABEL"', text)
         self.assertIn('"#123456"', text)
-        self.assertRegex(text, '.*:\s*3[,}]')
+        self.assertRegex(text, r'.*:\s*3[,}]')

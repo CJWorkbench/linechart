@@ -235,6 +235,7 @@ class Form:
         nulls = series.isna().values
         x_values = table[self.x_column]
         safe_x_values = x_values[~nulls]  # so we can min(), len(), etc
+        safe_x_values.reset_index(drop=True, inplace=True)
 
         if _is_text(x_values) and len(safe_x_values) > MaxNAxisLabels:
             raise ValueError(
