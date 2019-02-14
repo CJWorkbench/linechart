@@ -13,13 +13,6 @@ def _is_text(series):
     return hasattr(series, 'cat') or series.dtype == object
 
 
-def _format_datetime(dt: Optional[datetime.datetime]) -> Optional[str]:
-    if dt is pandas.NaT:
-        return None
-    else:
-        return dt.isoformat() + 'Z'
-
-
 class GentleValueError(ValueError):
     """
     A ValueError that should not display in red to the user.
