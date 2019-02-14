@@ -1,6 +1,7 @@
 import datetime
 import json
 from typing import Any, Dict, List, Optional
+import numpy as np
 import pandas
 from pandas.api.types import is_numeric_dtype, is_datetime64_dtype
 
@@ -53,10 +54,15 @@ class XSeries:
         In particular: datetime64 values will be converted to str.
         """
         if is_datetime64_dtype(self.values.dtype):
-            return self.values \
-                    .astype(datetime.datetime) \
-                    .apply(_format_datetime) \
-                    .values
+            try:
+                utc_series = self.values.dt.tz_convert(None).to_series()
+            except TypeError:
+                utc_series = self.values
+
+            str_series = utc_series.dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+            str_series = str_series.mask(self.values.isna())  # 'NaT' => np.nan
+
+            return str_series.values
         else:
             return self.values
 
