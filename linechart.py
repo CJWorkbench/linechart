@@ -133,11 +133,6 @@ class Chart:
         x_axis = {
             'title': self.x_axis_label
         }
-        if self.x_series.vega_data_type == 'ordinal':
-            x_axis.update({
-                'labelAngle': 0,
-                'labelOverlap': False,
-            })
 
         ret = {
             '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
@@ -182,7 +177,7 @@ class Chart:
                 'x': {
                     'field': 'x',
                     'type': self.x_series.vega_data_type,
-                    'axis': x_axis,
+                    'axis': x_axis
                 },
 
                 'y': {
@@ -201,6 +196,14 @@ class Chart:
                 },
             },
         }
+
+        if self.x_series.vega_data_type == 'ordinal':
+            ret['encoding']['x']['axis'].update({
+                'labelAngle': 0,
+                'labelOverlap': False,
+            })
+            ret['encoding']['x']['sort'] = None
+            ret['encoding']['order'] = {'type': None}
 
         if len(self.y_columns) == 1:
             ret['encoding']['color']['legend'] = None

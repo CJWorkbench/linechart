@@ -156,6 +156,20 @@ class FormTest(unittest.TestCase):
             {'x': 'b', 'line': 'B', 'y': 2},
         ])
 
+    def test_x_text_sort(self):
+        form = self.build_form(x_column='A')
+        chart = form.make_chart(pd.DataFrame({'A': ['b', 'a'], 'B': [1, 2]}))
+        assert np.array_equal(chart.x_series.series, ['b', 'a'])
+
+        vega = chart.to_vega()
+        self.assertEqual(vega['encoding']['x']['type'], 'ordinal')
+        self.assertEqual(vega['data']['values'], [
+            {'x': 'b', 'line': 'B', 'y': 1},
+            {'x': 'a', 'line': 'B', 'y': 2},
+        ])
+        self.assertEqual(vega['encoding']['x']['sort'], None)
+        self.assertEqual(vega['encoding']['order']['type'], None)
+
     def test_x_text_drop_na_x(self):
         form = self.build_form(x_column='A')
         table = pd.DataFrame({'A': ['a', None, 'c'], 'B': [1, 2, 3]})
