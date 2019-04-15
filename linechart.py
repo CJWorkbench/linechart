@@ -210,7 +210,8 @@ class Chart:
                         'title': self.x_axis_label,
                         'format': self.x_axis_tick_format,
                         'tickMinStep': (
-                            1 if self.x_axis_tick_format[-1] == 'd' else None
+                            1 if (self.x_axis_tick_format and
+                                  self.x_axis_tick_format[-1] == 'd') else None
                         ),
                     }
                 },
