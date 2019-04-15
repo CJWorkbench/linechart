@@ -209,6 +209,9 @@ class Chart:
                     'axis': {
                         'title': self.x_axis_label,
                         'format': self.x_axis_tick_format,
+                        'tickMinStep': (
+                            1 if self.x_axis_tick_format[-1] == 'd' else None
+                        ),
                     }
                 },
 
@@ -218,6 +221,9 @@ class Chart:
                     'axis': {
                         'title': self.y_axis_label,
                         'format': self.y_axis_tick_format,
+                        'tickMinStep': (
+                            1 if self.y_axis_tick_format[-1] == 'd' else None
+                        ),
                     },
                 },
 
