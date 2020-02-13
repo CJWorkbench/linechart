@@ -241,7 +241,6 @@ class Chart:
                 {"labelAngle": 0, "labelOverlap": False}
             )
             ret["encoding"]["x"]["sort"] = None
-            ret["encoding"]["order"] = {"type": None}
 
         if len(self.y_columns) == 1:
             ret["encoding"]["color"]["legend"] = None
