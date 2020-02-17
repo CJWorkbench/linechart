@@ -4,8 +4,8 @@ import json
 from string import Formatter
 from typing import Any, Dict, List
 import pandas as pd
-from pandas.api.types import is_numeric_dtype, is_datetime64_dtype
 from cjwmodule import i18n
+from pandas.api.types import is_numeric_dtype
 
 
 MaxNAxisLabels = 300
@@ -328,18 +328,7 @@ class Chart:
                 "x": {
                     "field": "x",
                     "type": self.x_series.vega_data_type,
-                    "axis": {
-                        "title": self.x_axis_label,
-                        "format": self.x_axis_tick_format,
-                        "tickMinStep": (
-                            1
-                            if (
-                                self.x_axis_tick_format
-                                and self.x_axis_tick_format[-1] == "d"
-                            )
-                            else None
-                        ),
-                    },
+                    "axis": {"title": self.x_axis_label},
                 },
                 "y": {
                     "field": "y",
@@ -347,9 +336,6 @@ class Chart:
                     "axis": {
                         "title": self.y_axis_label,
                         "format": self.y_axis_tick_format,
-                        "tickMinStep": (
-                            1 if self.y_axis_tick_format[-1] == "d" else None
-                        ),
                     },
                 },
                 "color": {
@@ -363,12 +349,20 @@ class Chart:
             },
         }
 
+        if self.x_axis_tick_format is not None:
+            ret["encoding"]["x"]["axis"]["format"] = self.x_axis_tick_format
+
+        if self.x_axis_tick_format and self.x_axis_tick_format[-1] == "d":
+            ret["encoding"]["x"]["axis"]["tickMinStep"] = 1
+
         if self.x_series.vega_data_type == "ordinal":
             ret["encoding"]["x"]["axis"].update(
                 {"labelAngle": 0, "labelOverlap": False}
             )
             ret["encoding"]["x"]["sort"] = None
-            ret["encoding"]["order"] = {"type": None}
+
+        if self.y_axis_tick_format[-1] == "d":
+            ret["encoding"]["y"]["axis"]["tickMinStep"] = 1
 
         if len(self.y_columns) == 1:
             ret["encoding"]["color"]["legend"] = None

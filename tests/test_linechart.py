@@ -223,7 +223,6 @@ class FormTest(unittest.TestCase):
             [{"x": "b", "line": "B", "y": 1}, {"x": "a", "line": "B", "y": 2}],
         )
         self.assertEqual(vega["encoding"]["x"]["sort"], None)
-        self.assertEqual(vega["encoding"]["order"]["type"], None)
 
     def test_x_text_drop_na_x(self):
         form = self.build_form(x_column="A")
