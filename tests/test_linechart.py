@@ -7,7 +7,19 @@ import unittest
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
-from linechart import render, Form, YColumn, GentleValueError, migrate_params
+from linechart import (
+    render,
+    Form,
+    YColumn,
+    GentleValueError,
+    migrate_params,
+    OnlyOneValueError,
+    NoValuesError,
+    TooManyTextValuesError,
+    EmptyAxisError,
+    AxisNotNumericError,
+    SameAxesError
+)
 
 
 Column = namedtuple("Column", ("name", "type", "format"))
@@ -132,11 +144,7 @@ class FormTest(unittest.TestCase):
 
     def test_only_one_x_value(self):
         form = self.build_form(x_column="A")
-        with self.assertRaisesRegex(
-            ValueError,
-            'Column "A" has only 1 value. '
-            "Please select a column with 2 or more values.",
-        ):
+        with self.assertRaises(OnlyOneValueError):
             form.make_chart(
                 pd.DataFrame({"A": [1, 1], "B": [2, 3]}),
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
@@ -144,11 +152,7 @@ class FormTest(unittest.TestCase):
 
     def test_only_one_x_value_not_at_index_0(self):
         form = self.build_form(x_column="A")
-        with self.assertRaisesRegex(
-            ValueError,
-            'Column "A" has only 1 value. '
-            "Please select a column with 2 or more values.",
-        ):
+        with self.assertRaises(OnlyOneValueError):
             form.make_chart(
                 pd.DataFrame({"A": [np.nan, 1], "B": [2, 3]}),
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
@@ -156,9 +160,7 @@ class FormTest(unittest.TestCase):
 
     def test_no_x_values(self):
         form = self.build_form(x_column="A")
-        with self.assertRaisesRegex(
-            ValueError, 'Column "A" has no values. ' "Please select a column with data."
-        ):
+        with self.assertRaises(NoValuesError):
             form.make_chart(
                 pd.DataFrame({"A": [np.nan, np.nan], "B": [2, 3]}),
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
@@ -241,12 +243,7 @@ class FormTest(unittest.TestCase):
     def test_x_text_too_many_values(self):
         form = self.build_form(x_column="A")
         table = pd.DataFrame({"A": ["a"] * 301, "B": [1] * 301})
-        with self.assertRaisesRegex(
-            ValueError,
-            'Column "A" has 301 text values. We cannot fit them all on '
-            "the X axis. Please change the input table to have 10 or fewer "
-            'rows, or convert "A" to number or date.',
-        ):
+        with self.assertRaises(TooManyTextValuesError):
             form.make_chart(
                 table,
                 {"A": Column("A", "text", None), "B": Column("B", "number", "{:}")},
@@ -328,9 +325,7 @@ class FormTest(unittest.TestCase):
 
     def test_invalid_y_same_as_x(self):
         form = self.build_form(y_columns=[YColumn("A", "#ababab")])
-        with self.assertRaisesRegex(
-            ValueError, 'Cannot plot Y-axis column "A" because it is the X-axis column'
-        ):
+        with self.assertRaises(SameAxesError):
             form.make_chart(min_table, min_columns)
 
     def test_invalid_y_missing_values(self):
@@ -344,19 +339,13 @@ class FormTest(unittest.TestCase):
                 "C": [np.nan, np.nan, 9, 10, np.nan],
             }
         )
-        with self.assertRaisesRegex(
-            ValueError, 'Cannot plot Y-axis column "C" because it has no values'
-        ):
+        with self.assertRaises(EmptyAxisError):
             form.make_chart(table, min_columns)
 
     def test_invalid_y_not_numeric(self):
         form = self.build_form(y_columns=[YColumn("B", "#123456")])
         table = pd.DataFrame({"A": [1, 2, 3], "B": ["a", "b", "c"]})
-        with self.assertRaisesRegex(
-            ValueError,
-            'Cannot plot Y-axis column "B" because it is not numeric. '
-            "Convert it to a number before plotting it.",
-        ):
+        with self.assertRaises(AxisNotNumericError):
             form.make_chart(
                 table,
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "text", None)},

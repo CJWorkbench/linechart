@@ -72,6 +72,132 @@ class GentleValueError(ValueError):
     """
 
 
+class RenderingError(ValueError):
+    """
+    A ValueError that should display in red to the user.
+    """
+    
+    @property
+    def i18n_message(self):
+        raise NotImplementedError()
+    
+    def __str__(self):
+        raise NotImplementedError()
+
+
+class SameAxesError(RenderingError):
+    def __init__(self, column_name):
+        self.column_name = column_name
+    
+    @property
+    def i18n_message(self):
+        return i18n.trans(
+            "SameAxesError.message",
+            'You cannot plot Y-axis column {column_name} because it is the X-axis column',
+            {'column_name': self.column_name}
+        )
+    
+    def __str__(self):
+        return f'You cannot plot Y-axis column {self.column_name} because it is the X-axis column'
+
+
+class AxisNotNumericError(RenderingError):
+    def __init__(self, column_name):
+        self.column_name = column_name
+    
+    @property
+    def i18n_message(self):
+        return i18n.trans(
+            "AxisNotNumericError.message",
+            'Cannot plot Y-axis column "{column_name}" because it is not numeric. '
+            "Convert it to a number before plotting it.",
+            {
+                "column_name": self.column_name
+            }
+        )
+    
+    def __str__(self):
+        return (
+            f'You cannot plot Y-axis column "{self.column_name}" because because it is not numeric. '
+            "Convert it to a number before plotting it."
+        )
+
+class EmptyAxisError(RenderingError):
+    def __init__(self, column_name):
+        self.column_name = column_name
+    
+    @property
+    def i18n_message(self):
+        return i18n.trans(
+            "EmptyAxisError.message",
+            'Cannot plot Y-axis column "{column_name}" because it has no values',
+            {
+                "column_name": self.column_name
+            }
+        )
+    
+    def __str__(self):
+        return f'Cannot plot Y-axis column "{self.column_name}" because it has no values'
+
+class NoValuesError(RenderingError):
+    def __init__(self, column_name):
+        self.column_name = column_name
+    
+    @property
+    def i18n_message(self):
+        return i18n.trans(
+            "NoValuesError.message",
+            'Column "{column_name}" has no values. Please select a column with data.',
+            {
+                "column_name": self.column_name
+            }
+        )
+    
+    def __str__(self):
+        return f'Column "{self.column_name}" has no values. Please select a column with data.'
+
+class OnlyOneValueError(RenderingError):
+    def __init__(self, column_name):
+        self.column_name = column_name
+    
+    @property
+    def i18n_message(self):
+        return i18n.trans(
+            "OnlyOneValueError.message",
+            'Column "{column_name}" has only 1 value. Please select a column with 2 or more values.',
+            {
+                "column_name": self.column_name
+            }
+        )
+    
+    def __str__(self):
+        return f'Column "{self.column_name}" has only 1 value. Please select a column with 2 or more values.'
+
+
+class TooManyTextValuesError(RenderingError):
+    def __init__(self, x_column, safe_x_values):
+        self.x_column = x_column
+        self.safe_x_values = safe_x_values
+    
+    @property
+    def i18n_message(self):
+        return i18n.trans(
+            "TooManyTextValuesError.message",
+            'Column "{x_column}" has {n_safe_x_values} text values. We cannot fit them all on the X axis. '
+            'Please change the input table to have 10 or fewer rows, or convert "{x_column}" to number or date.',
+            {
+                'x_column': self.x_column,
+                'n_safe_x_values': self.safe_x_values,
+            }
+        )
+    
+    def __str__(self):
+        return (
+            f'Column "{self.x_column}" has {self.safe_x_values} text values. We cannot fit them all on the X axis. '
+            f'Please change the input table to have 10 or fewer rows, or convert "{self.x_column}" to number or date.'
+        )
+
+
 @dataclass
 class XSeries:
     series: pd.Series
@@ -300,24 +426,13 @@ class Form:
         safe_x_values.reset_index(drop=True, inplace=True)
 
         if column.type == "text" and len(safe_x_values) > MaxNAxisLabels:
-            raise ValueError(
-                f'Column "{self.x_column}" has {len(safe_x_values)} '
-                "text values. We cannot fit them all on the X axis. "
-                "Please change the input table to have 10 or fewer rows, or "
-                f'convert "{self.x_column}" to number or date.'
-            )
+            raise TooManyTextValuesError(self.x_column, len(safe_x_values))
 
         if not len(safe_x_values):
-            raise ValueError(
-                f'Column "{self.x_column}" has no values. '
-                "Please select a column with data."
-            )
+            raise NoValuesError(self.x_column)
 
         if not len(safe_x_values[safe_x_values != safe_x_values[0]]):
-            raise ValueError(
-                f'Column "{self.x_column}" has only 1 value. '
-                "Please select a column with 2 or more values."
-            )
+            raise OnlyOneValueError(self.x_column)
 
         return XSeries(series, column)
 
@@ -346,29 +461,19 @@ class Form:
         y_columns = []
         for ycolumn in self.y_columns:
             if ycolumn.column == self.x_column:
-                raise ValueError(
-                    f'Cannot plot Y-axis column "{ycolumn.column}" '
-                    "because it is the X-axis column"
-                )
+                raise SameAxesError(ycolumn.column)
 
             series = table[ycolumn.column]
 
             if not is_numeric_dtype(series.dtype):
-                raise ValueError(
-                    f'Cannot plot Y-axis column "{ycolumn.column}" '
-                    "because it is not numeric. "
-                    "Convert it to a number before plotting it."
-                )
+                raise AxisNotNumericError(ycolumn.column)
 
             # Find how many Y values can actually be plotted on the X axis. If
             # there aren't going to be any Y values on the chart, raise an
             # error.
             matches = pd.DataFrame({"X": x_series.series, "Y": series}).dropna()
             if not matches["X"].count():
-                raise ValueError(
-                    f'Cannot plot Y-axis column "{ycolumn.column}" '
-                    "because it has no values"
-                )
+                raise EmptyAxisError(ycolumn.column)
 
             y_columns.append(
                 YSeries(series, ycolumn.color, input_columns[ycolumn.column].format)
@@ -395,8 +500,8 @@ def render(table, params, *, input_columns):
         chart = form.make_chart(table, input_columns)
     except GentleValueError as err:
         return (table, "", {"error": str(err)})
-    except ValueError as err:
-        return (table, str(err), {"error": str(err)})
+    except RenderingError as err:
+        return (table, err.i18n_message, {"error": str(err)})
 
     json_dict = chart.to_vega()
     return (table, "", json_dict)
