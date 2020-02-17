@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-02-17 18:09+0000\n"
+"POT-Creation-Date: 2020-02-17 18:20+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -46,33 +46,33 @@ msgstr "Label"
 msgid "_spec.parameters.y_columns.name"
 msgstr "Column"
 
-#: linechart.py:94
+#: linechart.py:95
 msgid "SameAxesError.message"
 msgstr ""
 "You cannot plot Y-axis column {column_name} because it is the X-axis "
 "column"
 
-#: linechart.py:110
+#: linechart.py:111
 msgid "AxisNotNumericError.message"
 msgstr ""
 "Cannot plot Y-axis column \"{column_name}\" because it is not numeric. "
 "Convert it to a number before plotting it."
 
-#: linechart.py:131
+#: linechart.py:132
 msgid "EmptyAxisError.message"
 msgstr "Cannot plot Y-axis column \"{column_name}\" because it has no values"
 
-#: linechart.py:148
+#: linechart.py:149
 msgid "NoValuesError.message"
 msgstr "Column \"{column_name}\" has no values. Please select a column with data."
 
-#: linechart.py:165
+#: linechart.py:166
 msgid "OnlyOneValueError.message"
 msgstr ""
 "Column \"{column_name}\" has only 1 value. Please select a column with 2 "
 "or more values."
 
-#: linechart.py:184
+#: linechart.py:185
 msgid "TooManyTextValuesError.message"
 msgstr ""
 "Column \"{x_column}\" has {n_safe_x_values} text values. We cannot fit "

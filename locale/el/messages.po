@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-02-17 18:09+0000\n"
+"POT-Creation-Date: 2020-02-17 18:20+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -46,27 +46,27 @@ msgstr ""
 msgid "_spec.parameters.y_columns.name"
 msgstr ""
 
-#: linechart.py:94
+#: linechart.py:95
 msgid "SameAxesError.message"
 msgstr ""
 
-#: linechart.py:110
+#: linechart.py:111
 msgid "AxisNotNumericError.message"
 msgstr ""
 
-#: linechart.py:131
+#: linechart.py:132
 msgid "EmptyAxisError.message"
 msgstr ""
 
-#: linechart.py:148
+#: linechart.py:149
 msgid "NoValuesError.message"
 msgstr ""
 
-#: linechart.py:165
+#: linechart.py:166
 msgid "OnlyOneValueError.message"
 msgstr ""
 
-#: linechart.py:184
+#: linechart.py:185
 msgid "TooManyTextValuesError.message"
 msgstr ""
 

@@ -5,6 +5,7 @@ from string import Formatter
 from typing import Any, Dict, List
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_datetime64_dtype
+from cjwmodule import i18n
 
 
 MaxNAxisLabels = 300
