@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-02-17 18:20+0000\n"
+"POT-Creation-Date: 2020-02-18 15:47+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -20,31 +20,33 @@ msgstr ""
 "Generated-By: Babel 2.8.0\n"
 
 msgid "_spec.name"
-msgstr ""
+msgstr "Γραμμικό γράφημα"
 
 msgid "_spec.description"
 msgstr ""
+"Οπτικοποίηση δεδομένων με τη μορφή σειράς σημείων που συνδέονται με "
+"ευθείες γραμμές."
 
 msgid "_spec.parameters.title.placeholder"
-msgstr ""
+msgstr "Τίτλος γραφήματος"
 
 msgid "_spec.parameters.x_axis_label.name"
-msgstr ""
+msgstr "Άξονας X"
 
 msgid "_spec.parameters.x_axis_label.placeholder"
-msgstr ""
+msgstr "Ετικέτα"
 
 msgid "_spec.parameters.x_column.placeholder"
-msgstr ""
+msgstr "Επιλέξτε στήλη"
 
 msgid "_spec.parameters.y_axis_label.name"
-msgstr ""
+msgstr "Άξονας Y"
 
 msgid "_spec.parameters.y_axis_label.placeholder"
-msgstr ""
+msgstr "Ετικέτα"
 
 msgid "_spec.parameters.y_columns.name"
-msgstr ""
+msgstr "Στήλη"
 
 #: linechart.py:95
 msgid "SameAxesError.message"
