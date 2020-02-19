@@ -131,11 +131,18 @@ class FormTest(unittest.TestCase):
 
     def test_missing_x_param(self):
         form = self.build_form(x_column="")
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(
                 pd.DataFrame({"A": [1, 2], "B": [2, 3]}),
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
             )
+            
+        try:
+            form.make_chart(
+                pd.DataFrame({"A": [1, 2], "B": [2, 3]}),
+                {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
+            )
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message("noXAxisError.message")
@@ -143,17 +150,24 @@ class FormTest(unittest.TestCase):
 
     def test_only_one_x_value(self):
         form = self.build_form(x_column="A")
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(
                 pd.DataFrame({"A": [1, 1], "B": [2, 3]}),
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
             )
+        
+        try:
+            form.make_chart(
+                pd.DataFrame({"A": [1, 1], "B": [2, 3]}),
+                {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
+            )
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message(
                     "onlyOneValueError.message",
                     {
-                        "column_name": "B"
+                        "column_name": "A"
                     }
                 )
             )
@@ -165,29 +179,43 @@ class FormTest(unittest.TestCase):
                 pd.DataFrame({"A": [np.nan, 1], "B": [2, 3]}),
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
             )
+            
+        try:
+            form.make_chart(
+                pd.DataFrame({"A": [np.nan, 1], "B": [2, 3]}),
+                {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
+            )
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message(
                     "onlyOneValueError.message",
                     {
-                        "column_name": "B"
+                        "column_name": "A"
                     }
                 )
             )
 
     def test_no_x_values(self):
         form = self.build_form(x_column="A")
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(
                 pd.DataFrame({"A": [np.nan, np.nan], "B": [2, 3]}),
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
             )
+            
+        try:
+            form.make_chart(
+                pd.DataFrame({"A": [np.nan, np.nan], "B": [2, 3]}),
+                {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:}")},
+            )
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message(
                     "noValuesError.message",
                     {
-                        "column_name": "B"
+                        "column_name": "A"
                     }
                 )
             )
@@ -268,18 +296,21 @@ class FormTest(unittest.TestCase):
     def test_x_text_too_many_values(self):
         form = self.build_form(x_column="A")
         table = pd.DataFrame({"A": ["a"] * 301, "B": [1] * 301})
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(
                 table,
                 {"A": Column("A", "text", None), "B": Column("B", "number", "{:}")},
             )
-            
+        try:
+            form.make_chart(
+                table,
+                {"A": Column("A", "text", None), "B": Column("B", "number", "{:}")},
+            )
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message(
                     "tooManyTextValuesError.message",
-                    'Column "{x_column}" has {n_safe_x_values} text values. We cannot fit them all on the X axis. '
-                    'Please change the input table to have 10 or fewer rows, or convert "{x_column}" to number or date.',
                     {
                         'x_column': "A",
                         'n_safe_x_values': 301,
@@ -358,16 +389,22 @@ class FormTest(unittest.TestCase):
 
     def test_missing_y_param(self):
         form = self.build_form(y_columns=[])
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(min_table, min_columns)
+        try:
+            form.make_chart(min_table, min_columns)
+        except GentleValueError as err:
             self.assertEqual(err.i18n_message, i18n_message(
                 "noYAxisError.message"
             ))
 
     def test_invalid_y_same_as_x(self):
         form = self.build_form(y_columns=[YColumn("A", "#ababab")])
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(min_table, min_columns)
+        try:
+            form.make_chart(min_table, min_columns)
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message(
@@ -387,8 +424,11 @@ class FormTest(unittest.TestCase):
                 "C": [np.nan, np.nan, 9, 10, np.nan],
             }
         )
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(table, min_columns)
+        try:
+            form.make_chart(table, min_columns)
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message(
@@ -402,16 +442,21 @@ class FormTest(unittest.TestCase):
     def test_invalid_y_not_numeric(self):
         form = self.build_form(y_columns=[YColumn("B", "#123456")])
         table = pd.DataFrame({"A": [1, 2, 3], "B": ["a", "b", "c"]})
-        with self.assertRaises(GentleValueError) as err:
+        with self.assertRaises(GentleValueError):
             form.make_chart(
                 table,
                 {"A": Column("A", "number", "{:}"), "B": Column("B", "text", None)},
             )
+        try:
+            form.make_chart(
+                table,
+                {"A": Column("A", "number", "{:}"), "B": Column("B", "text", None)},
+            )
+        except GentleValueError as err:
             self.assertEqual(
                 err.i18n_message,
                 i18n_message(
                     "axisNotNumericError.message",
-                    "Convert it to a number before plotting it.",
                     {
                         "column_name": "B"
                     }
