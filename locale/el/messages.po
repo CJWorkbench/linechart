@@ -50,33 +50,45 @@ msgstr "Στήλη"
 
 #: linechart.py:295
 msgid "noXAxisError.message"
-msgstr ""
+msgstr "Επιλέξτε μια στήλη για τον άξονα X"
 
 #: linechart.py:313
 msgid "tooManyTextValuesError.message"
 msgstr ""
+"Η στήλη \"{x_column}\" έχει {n_safe_x_values} τιμές κειμένου. Δεν μπορούν να "
+"χωρέσουν όλες στον άξονα X. Αλλάξτε τον πίνακα εισόδου ώστε να έχει 10 ή "
+"λιγότερες σειρές ή μετατρέψτε τη στήλη \"{x_column}\" σε αριθμό ή ημερομηνία."
 
 #: linechart.py:318
 msgid "noValuesError.message"
 msgstr ""
+"Η στήλη \"{column_name}\" δεν έχει τιμές. Επιλέξτε μια στήλη με δεδομένα."
 
 #: linechart.py:327
 msgid "onlyOneValueError.message"
 msgstr ""
+"Η στήλη \"{column_name}\" έχει μόνο 1 τιμή. Επιλέξτε μια στήλη με 2 ή "
+"περισσότερες τιμές."
 
 #: linechart.py:357
 msgid "noYAxisError.message"
-msgstr ""
+msgstr "Επιλέξτε μια στήλη για τον άξονα Y"
 
 #: linechart.py:365
 msgid "sameAxesError.message"
 msgstr ""
+"Δεν είναι δυνατή η σχεδίαση της στήλης του άξονα Y {column_name} επειδή "
+"είναι η στήλη του άξονα X"
 
 #: linechart.py:374
 msgid "axisNotNumericError.message"
 msgstr ""
+"Δεν είναι δυνατή η σχεδίαση της στήλης \"{column_name}\" του άξονα Y επειδή "
+"δεν είναι αριθμητική. Μετατρέψτε την σε αριθμούς πριν τη σχεδιάσετε."
 
 #: linechart.py:388
 msgid "emptyAxisError.message"
 msgstr ""
+"Δεν είναι δυνατή η σχεδίαση της στήλης του άξονα Y \"{column_name}\" επειδή "
+"δεν έχει τιμές"
 
