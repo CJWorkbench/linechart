@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-02-18 18:14+0000\n"
+"POT-Creation-Date: 2020-09-30 15:10+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: el\n"
@@ -48,47 +48,48 @@ msgstr "Ετικέτα"
 msgid "_spec.parameters.y_columns.name"
 msgstr "Στήλη"
 
-#: linechart.py:295
+#: linechart.py:298
 msgid "noXAxisError.message"
 msgstr "Επιλέξτε μια στήλη για τον άξονα X"
 
-#: linechart.py:313
+#: linechart.py:315
 msgid "tooManyTextValuesError.message"
 msgstr ""
-"Η στήλη \"{x_column}\" έχει {n_safe_x_values} τιμές κειμένου. Δεν μπορούν να "
-"χωρέσουν όλες στον άξονα X. Αλλάξτε τον πίνακα εισόδου ώστε να έχει 10 ή "
-"λιγότερες σειρές ή μετατρέψτε τη στήλη \"{x_column}\" σε αριθμό ή ημερομηνία."
+"Η στήλη \"{x_column}\" έχει {n_safe_x_values} τιμές κειμένου. Δεν μπορούν"
+" να χωρέσουν όλες στον άξονα X. Αλλάξτε τον πίνακα εισόδου ώστε να έχει "
+"10 ή λιγότερες σειρές ή μετατρέψτε τη στήλη \"{x_column}\" σε αριθμό ή "
+"ημερομηνία."
 
-#: linechart.py:318
+#: linechart.py:322
 msgid "noValuesError.message"
-msgstr ""
-"Η στήλη \"{column_name}\" δεν έχει τιμές. Επιλέξτε μια στήλη με δεδομένα."
+msgstr "Η στήλη \"{column_name}\" δεν έχει τιμές. Επιλέξτε μια στήλη με δεδομένα."
 
-#: linechart.py:327
+#: linechart.py:331
 msgid "onlyOneValueError.message"
 msgstr ""
 "Η στήλη \"{column_name}\" έχει μόνο 1 τιμή. Επιλέξτε μια στήλη με 2 ή "
 "περισσότερες τιμές."
 
-#: linechart.py:357
+#: linechart.py:361
 msgid "noYAxisError.message"
 msgstr "Επιλέξτε μια στήλη για τον άξονα Y"
 
-#: linechart.py:365
+#: linechart.py:368
 msgid "sameAxesError.message"
 msgstr ""
 "Δεν είναι δυνατή η σχεδίαση της στήλης του άξονα Y {column_name} επειδή "
 "είναι η στήλη του άξονα X"
 
-#: linechart.py:374
+#: linechart.py:379
 msgid "axisNotNumericError.message"
 msgstr ""
-"Δεν είναι δυνατή η σχεδίαση της στήλης \"{column_name}\" του άξονα Y επειδή "
-"δεν είναι αριθμητική. Μετατρέψτε την σε αριθμούς πριν τη σχεδιάσετε."
+"Δεν είναι δυνατή η σχεδίαση της στήλης \"{column_name}\" του άξονα Y "
+"επειδή δεν είναι αριθμητική. Μετατρέψτε την σε αριθμούς πριν τη "
+"σχεδιάσετε."
 
-#: linechart.py:388
+#: linechart.py:393
 msgid "emptyAxisError.message"
 msgstr ""
-"Δεν είναι δυνατή η σχεδίαση της στήλης του άξονα Y \"{column_name}\" επειδή "
-"δεν έχει τιμές"
+"Δεν είναι δυνατή η σχεδίαση της στήλης του άξονα Y \"{column_name}\" "
+"επειδή δεν έχει τιμές"
 
