@@ -1,12 +1,13 @@
 from __future__ import annotations
-from dataclasses import dataclass
+
 import json
+from dataclasses import dataclass
 from string import Formatter
 from typing import Any, Dict, List
+
 import pandas as pd
 from cjwmodule import i18n
 from pandas.api.types import is_numeric_dtype
-
 
 MaxNAxisLabels = 300
 
