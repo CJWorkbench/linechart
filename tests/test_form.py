@@ -143,7 +143,7 @@ def test_x_text_drop_na_x():
     chart = form.make_chart(
         table, {"A": Column("A", "text", None), "B": Column("B", "number", "{:}")}
     )
-    assert np.array_equal(chart.x_series.series, ["a", None, "c"])
+    assert np.array_equal(chart.x_series.series, ["a", "c"])
 
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "ordinal"
@@ -189,6 +189,30 @@ def test_x_timestamp():
     assert vega["data"]["values"] == [
         {"x": "2018-08-29T13:39:00Z", "line": "B", "y": 3},
         {"x": "2018-08-29T13:40:00Z", "line": "B", "y": 4},
+    ]
+
+
+def test_x_timestamp_custom_ticks():
+    form = build_form(x_column="A")
+    t1 = datetime.datetime(2020, 12, 7)
+    t2 = datetime.datetime(2020, 12, 14)
+    table = pd.DataFrame({"A": [t1, t2], "B": [3, 4]})
+    chart = form.make_chart(
+        table,
+        # TODO use timestamp format
+        {"A": Column("A", "timestamp", None), "B": Column("B", "number", "{:}")},
+    )
+    vega = chart.to_vega()
+    assert vega["encoding"]["x"]["type"] == "temporal"
+    assert vega["encoding"]["x"]["scale"]["domainMin"] == {"expr": "utc(2020, 11, 7)"}
+    assert vega["encoding"]["x"]["axis"]["values"] == ["2020-12-07", "2020-12-14"]
+    assert (
+        vega["encoding"]["x"]["axis"]["labelExpr"]
+        == 'utcFormat(datum.value, "%b %-d, %Y")'
+    )
+    assert vega["data"]["values"] == [
+        {"x": "2020-12-07T00:00:00Z", "line": "B", "y": 3},
+        {"x": "2020-12-14T00:00:00Z", "line": "B", "y": 4},
     ]
 
 

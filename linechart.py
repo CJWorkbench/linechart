@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import datetime
 import json
-from dataclasses import dataclass
+import math
 from string import Formatter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
+import numpy as np
 import pandas as pd
 from cjwmodule import i18n
+from dateutil.relativedelta import relativedelta
 from pandas.api.types import is_numeric_dtype
 
 MaxNAxisLabels = 300
+MaxSpecialCaseNTicks = 8
 
 
 def _migrate_params_vneg1_to_v0(params):
@@ -65,8 +69,7 @@ def python_format_to_d3_tick_format(python_format: str) -> str:
 
 
 class GentleValueError(ValueError):
-    """
-    A ValueError that should not display in red to the user.
+    """A ValueError that should not display in red to the user.
 
     The first argument must be an `i18n.I18nMessage`.
 
@@ -80,8 +83,20 @@ class GentleValueError(ValueError):
         return self.args[0]
 
 
-@dataclass
-class XSeries:
+def _nice_date_ticks(
+    max_date: datetime.date,
+    n_periods_in_domain: int,
+    period: Union[datetime.timedelta, relativedelta],
+) -> List[datetime.date]:
+    n_domain_values = n_periods_in_domain + 1
+    n_periods_between_ticks = math.ceil(n_domain_values / (MaxSpecialCaseNTicks - 1))
+    n_ticks = math.ceil(n_periods_in_domain / n_periods_between_ticks) + 1
+    tick_timedelta = n_periods_between_ticks * period
+    tick0 = max_date - (n_ticks - 1) * tick_timedelta
+    return [(tick0 + tick_timedelta * i) for i in range(n_ticks)]
+
+
+class XSeries(NamedTuple):
     series: pd.Series
     column: Any
     """RenderColumn (has a '.name', '.type' and '.format')."""
@@ -108,27 +123,82 @@ class XSeries:
 
     @property
     def json_compatible_values(self) -> pd.Series:
-        """
-        Array of str or int or float values for the X axis of the chart.
+        """Array of str or int or float values for the X axis of the chart.
 
         In particular: datetime64 values will be converted to str.
         """
         if self.column.type == "timestamp":
-            try:
-                utc_series = self.series.dt.tz_convert(None).to_series()
-            except TypeError:
-                utc_series = self.series
-
-            str_series = utc_series.dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            str_series = str_series.mask(self.series.isna())  # 'NaT' => np.nan
-
-            return str_series.values
+            return self.series.map(pd.Timestamp.isoformat) + "Z"
         else:
             return self.series
 
+    @property
+    def timestamp_tick_values_and_format(
+        self,
+    ) -> Optional[Tuple[List[datetime.date], str]]:
+        """Array of ISO8601 strings of timestamps that should be ticks.
 
-@dataclass
-class YSeries:
+        None if this is not a timestamp series.
+
+        None if we do not special-case this arrangement of timestamps.
+
+        Special cases:
+
+            * All values are midnight UTC on the same weekday: this is
+              a "week" series. Impute missing timestamps and return the regular
+              monotonic series -- a series of dates of interest. If there are
+              >MaxSpecialCaseNTicks, pick the lowest interval that produces
+              fewer ticks. Make sure the _last_ date is always a tick, and
+              impute a start tick that may come before all dates in the series.
+        """
+        if self.column.type != "timestamp":
+            return None
+
+        if not self.series.dt.normalize().equals(self.series):
+            # Dates with times. Fallback to vega-lite (D3) defaults
+            return None
+
+        # Okay, we have whole dates.
+
+        if self.series.dt.is_year_start.all():
+            # All dates are the first of the year. Treat this as "years".
+            series_min = self.series.min()
+            series_max = self.series.max()
+            period = relativedelta(years=1)  # Python doesn't do year math
+            n_periods_in_domain = (
+                series_max.to_period("Y") - series_min.to_period("Y")
+            ).n
+            return (
+                _nice_date_ticks(series_max.date(), n_periods_in_domain, period),
+                "%Y",  # "2020"
+            )
+
+        if self.series.dt.is_month_start.all():
+            # All dates are the first of the month. Treat this as "months".
+            series_min = self.series.min()
+            series_max = self.series.max()
+            period = relativedelta(months=1)  # Python doesn't do month math
+            n_periods_in_domain = (
+                series_max.to_period("M") - series_min.to_period("M")
+            ).n
+            return (
+                _nice_date_ticks(series_max.date(), n_periods_in_domain, period),
+                "%b %Y",  # "Jan 2020"
+            )
+
+        if self.series.dt.dayofweek.nunique() == 1:
+            # All dates fall on the same weekday. Treat this as "weeks".
+            min_date = self.series.min().date()
+            max_date = self.series.max().date()
+            period = datetime.timedelta(weeks=1)
+            n_periods_in_domain = (max_date - min_date) / period
+            return (
+                _nice_date_ticks(max_date, n_periods_in_domain, period),
+                "%b %-d, %Y",  # "Jan 3, 2020"
+            )
+
+
+class YSeries(NamedTuple):
     series: pd.Series
     color: str
     tick_format: str
@@ -143,8 +213,7 @@ class YSeries:
         return python_format_to_d3_tick_format(self.tick_format)
 
 
-@dataclass
-class Chart:
+class Chart(NamedTuple):
     """Fully-sane parameters. Columns are series."""
 
     title: str
@@ -156,8 +225,7 @@ class Chart:
     y_axis_tick_format: str
 
     def to_vega_data_values(self) -> List[Dict[str, Any]]:
-        """
-        Build a dict for Vega's .data.values Array.
+        """Build a dict for Vega's .data.values Array.
 
         Return value is a list of dict records. Each has
         {'x': 'X Name', 'line': 'Line Name', 'y': 1.0}
@@ -173,12 +241,44 @@ class Chart:
         vertical["line"] = vertical["line"].str[1:]  # drop 'y' prefix
         return vertical.to_dict(orient="records")
 
-    def to_vega(self) -> Dict[str, Any]:
-        """
-        Build a Vega bar chart or grouped bar chart.
-        """
+    def to_vega_x_encoding(self) -> Dict[str, Any]:
         ret = {
-            "$schema": "https://vega.github.io/schema/vega-lite/v3.json",
+            "field": "x",
+            "type": self.x_series.vega_data_type,
+            "axis": {"title": self.x_axis_label},
+        }
+
+        if self.x_series.vega_data_type == "quantitative":
+            if self.x_axis_tick_format is not None:
+                ret["axis"]["format"] = self.x_axis_tick_format
+
+            if self.x_axis_tick_format and self.x_axis_tick_format[-1] == "d":
+                ret["axis"]["tickMinStep"] = 1
+        elif self.x_series.vega_data_type == "ordinal":
+            ret["axis"]["labelAngle"] = 0
+            ret["axis"]["labelOverlap"] = False
+            ret["sort"] = None
+        elif self.x_series.vega_data_type == "temporal":
+            special_case = self.x_series.timestamp_tick_values_and_format
+            if special_case:
+                ticks, tick_format = special_case
+                ret["axis"]["values"] = [tick.isoformat() for tick in ticks]
+                ret["axis"]["labelExpr"] = f'utcFormat(datum.value, "{tick_format}")'
+                ret["axis"]["labelOverlap"] = "parity"  # no auto-rotating
+                ret["axis"]["labelSeparation"] = 5
+                ret["scale"] = {
+                    "domainMin": {
+                        "expr": "utc(%d, %d, %d)"
+                        % (ticks[0].year, ticks[0].month - 1, ticks[0].day)
+                    }
+                }
+
+        return ret
+
+    def to_vega(self) -> Dict[str, Any]:
+        """Build a Vega bar chart or grouped bar chart."""
+        ret = {
+            "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
             "title": self.title,
             "config": {
                 "title": {
@@ -206,11 +306,7 @@ class Chart:
             "data": {"values": self.to_vega_data_values()},
             "mark": {"type": "line", "point": {"shape": "circle"}},
             "encoding": {
-                "x": {
-                    "field": "x",
-                    "type": self.x_series.vega_data_type,
-                    "axis": {"title": self.x_axis_label},
-                },
+                "x": self.to_vega_x_encoding(),
                 "y": {
                     "field": "y",
                     "type": "quantitative",
@@ -229,18 +325,6 @@ class Chart:
                 },
             },
         }
-
-        if self.x_axis_tick_format is not None:
-            ret["encoding"]["x"]["axis"]["format"] = self.x_axis_tick_format
-
-        if self.x_axis_tick_format and self.x_axis_tick_format[-1] == "d":
-            ret["encoding"]["x"]["axis"]["tickMinStep"] = 1
-
-        if self.x_series.vega_data_type == "ordinal":
-            ret["encoding"]["x"]["axis"].update(
-                {"labelAngle": 0, "labelOverlap": False}
-            )
-            ret["encoding"]["x"]["sort"] = None
 
         if self.y_axis_tick_format[-1] == "d":
             ret["encoding"]["y"]["axis"]["tickMinStep"] = 1
@@ -264,17 +348,13 @@ class Chart:
         return ret
 
 
-@dataclass
-class YColumn:
+class YColumn(NamedTuple):
     column: str
     color: str
 
 
-@dataclass
-class Form:
-    """
-    Parameter dict specified by the user: valid types, unchecked values.
-    """
+class Form(NamedTuple):
+    """Parameter dict specified by the user: valid types, unchecked values."""
 
     title: str
     x_axis_label: str
@@ -286,12 +366,10 @@ class Form:
     def from_params(cls, *, y_columns: List[Dict[str, str]], **kwargs):
         return cls(**kwargs, y_columns=[YColumn(**d) for d in y_columns])
 
-    def _make_x_series(
+    def _make_x_series_and_mask(
         self, table: pd.DataFrame, input_columns: Dict[str, Any]
-    ) -> XSeries:
-        """
-        Create an XSeries ready for charting, or raise ValueError.
-        """
+    ) -> Tuple[XSeries, np.array]:
+        """Create an XSeries ready for charting, or raise GentleValueError."""
         if not self.x_column:
             raise GentleValueError(
                 i18n.trans("noXAxisError.message", "Please choose an X-axis column")
@@ -334,11 +412,10 @@ class Form:
                 )
             )
 
-        return XSeries(series, column)
+        return XSeries(safe_x_values, column), ~nulls
 
     def make_chart(self, table: pd.DataFrame, input_columns: Dict[str, Any]) -> Chart:
-        """
-        Create a Chart ready for charting, or raise ValueError.
+        """Create a Chart ready for charting, or raise GentleValueError.
 
         Features:
         * Error if X column is missing
@@ -354,7 +431,8 @@ class Form:
         * Error if a Y column has fewer than 1 non-missing value
         * Default title, X and Y axis labels
         """
-        x_series = self._make_x_series(table, input_columns)
+        x_series, mask = self._make_x_series_and_mask(table, input_columns)
+
         if not self.y_columns:
             raise GentleValueError(
                 i18n.trans("noYAxisError.message", "Please choose a Y-axis column")
@@ -383,11 +461,15 @@ class Form:
                     )
                 )
 
+            series = series[mask]  # line up with x_series
+            series.reset_index(drop=True, inplace=True)
+
+            print(repr(series))
+
             # Find how many Y values can actually be plotted on the X axis. If
             # there aren't going to be any Y values on the chart, raise an
             # error.
-            matches = pd.DataFrame({"X": x_series.series, "Y": series}).dropna()
-            if not matches["X"].count():
+            if not series.count():
                 raise GentleValueError(
                     i18n.trans(
                         "emptyAxisError.message",
