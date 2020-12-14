@@ -276,7 +276,7 @@ class Chart(NamedTuple):
         return ret
 
     def to_vega(self) -> Dict[str, Any]:
-        """Build a Vega bar chart or grouped bar chart."""
+        """Build a Vega line chart."""
         ret = {
             "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
             "title": self.title,
@@ -304,7 +304,13 @@ class Chart(NamedTuple):
                 },
             },
             "data": {"values": self.to_vega_data_values()},
-            "mark": {"type": "line", "point": {"shape": "circle"}},
+            "mark": {
+                "type": "line",
+                "point": {
+                    "shape": "circle",
+                    "size": 36,
+                },
+            },
             "encoding": {
                 "x": self.to_vega_x_encoding(),
                 "y": {
