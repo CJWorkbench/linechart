@@ -221,25 +221,25 @@ class Chart(NamedTuple):
     x_axis_tick_format: str
     y_axis_label: str
     x_series: XSeries
-    y_columns: List[YSeries]
+    y_serieses: List[YSeries]  # "serieses": the new plural of "series"
     y_axis_tick_format: str
 
-    def to_vega_data_values(self) -> List[Dict[str, Any]]:
-        """Build a dict for Vega's .data.values Array.
+    def to_vega_inline_data(self) -> Dict[str, Any]:
+        """Build a dict for Vega's .datasets Array.
 
-        Return value is a list of dict records. Each has
-        {'x': 'X Name', 'line': 'Line Name', 'y': 1.0}
+        Return value is in CSV format, with columns "x,y0,y1,...".
+
+        (We use column names 'x' and f'y{colname}' to prevent conflicts (e.g.,
+        colname='x'). Vega conflicts behave differently from Workbench
+        column-name conflicts, and they add no value.)
         """
-        # We use column names 'x' and f'y{colname}' to prevent conflicts (e.g.,
-        # colname='x'). After melt(), we'll drop the 'y' prefix.
-        data = {"x": self.x_series.json_compatible_values}
-        for y_column in self.y_columns:
-            data["y" + y_column.name] = y_column.series
-        dataframe = pd.DataFrame(data)
-        vertical = dataframe.melt("x", var_name="line", value_name="y")
-        vertical.dropna(inplace=True)
-        vertical["line"] = vertical["line"].str[1:]  # drop 'y' prefix
-        return vertical.to_dict(orient="records")
+        datasets = {"x": self.x_series.json_compatible_values}  # all str/number
+        for i, y_series in enumerate(self.y_serieses):
+            datasets[f"y{i}"] = y_series.series  # all number
+        return [
+            {k: None if pd.isnull(v) else v for k, v in record.items()}
+            for record in pd.DataFrame(datasets).to_dict(orient="records")
+        ]
 
     def to_vega_x_encoding(self) -> Dict[str, Any]:
         ret = {
@@ -275,6 +275,24 @@ class Chart(NamedTuple):
 
         return ret
 
+    def to_vega_color_legend(self):
+        if len(self.y_serieses) == 1:
+            return None  # explicitly set "no legend"
+
+        return {
+            "title": None,  # it's already on the Y axis
+            "labelExpr": (
+                json.dumps({f"y{i}": y.name for i, y in enumerate(self.y_serieses)})
+                + "[datum.value]"
+            ),
+        }
+
+    def to_vega_color_scale(self):
+        return {
+            "domain": [f"y{i}" for i in range(len(self.y_serieses))],
+            "range": [y.color for y in self.y_serieses],
+        }
+
     def to_vega(self) -> Dict[str, Any]:
         """Build a Vega line chart."""
         ret = {
@@ -303,42 +321,68 @@ class Chart(NamedTuple):
                     "gridOpacity": 0.5,
                 },
             },
-            "data": {"values": self.to_vega_data_values()},
-            "mark": {
-                "type": "line",
-                "point": {
-                    "shape": "circle",
-                    "size": 36,
-                },
+            "data": {
+                "values": self.to_vega_inline_data(),
             },
             "encoding": {
                 "x": self.to_vega_x_encoding(),
-                "y": {
-                    "field": "y",
-                    "type": "quantitative",
-                    "axis": {
-                        "title": self.y_axis_label,
-                        "format": self.y_axis_tick_format,
+                "tooltip": [
+                    {
+                        "field": "x",
+                        "type": self.x_series.vega_data_type,
+                        "title": self.x_axis_label or self.x_series.column.name,
                     },
-                },
-                "color": {
-                    "field": "line",
-                    "type": "nominal",
-                    "scale": {
-                        "domain": [y.name for y in self.y_columns],
-                        "range": [y.color for y in self.y_columns],
-                    },
-                },
+                    *[
+                        {
+                            "field": f"y{i}",
+                            "type": "quantitative",
+                            "title": y_series.name,
+                        }
+                        for i, y_series in enumerate(self.y_serieses)
+                    ],
+                ],
             },
+            "layer": [
+                {
+                    "mark": {
+                        "type": "line",
+                        "point": {
+                            "shape": "circle",
+                            "size": 36,
+                        },
+                    },
+                    "encoding": {
+                        "y": {
+                            "field": f"y{i}",
+                            "type": "quantitative",
+                            "title": y_series.name,
+                            "axis": {
+                                "title": self.y_axis_label,
+                                "format": self.y_axis_tick_format,
+                            },
+                        },
+                        "color": {
+                            "datum": f"y{i}",
+                            **(
+                                {
+                                    "scale": self.to_vega_color_scale(),
+                                    "legend": self.to_vega_color_legend(),
+                                }
+                                if i == 0
+                                else {}
+                            ),
+                        },
+                    },
+                }
+                for i, y_series in enumerate(self.y_serieses)
+            ],
         }
 
         if self.y_axis_tick_format[-1] == "d":
-            ret["encoding"]["y"]["axis"]["tickMinStep"] = 1
+            for layer in ret["layer"]:
+                layer["encoding"]["y"]["axis"]["tickMinStep"] = 1
 
-        if len(self.y_columns) == 1:
-            ret["encoding"]["color"]["legend"] = None
-        else:
-            ret["encoding"]["color"]["legend"] = {"title": None}
+        if len(self.y_serieses) > 1:
             ret["config"]["legend"] = {
                 "symbolType": "circle",
                 "titlePadding": 20,
@@ -444,7 +488,7 @@ class Form(NamedTuple):
                 i18n.trans("noYAxisError.message", "Please choose a Y-axis column")
             )
 
-        y_columns = []
+        y_serieses = []
         for ycolumn in self.y_columns:
             if ycolumn.column == self.x_column:
                 raise GentleValueError(
@@ -470,8 +514,6 @@ class Form(NamedTuple):
             series = series[mask]  # line up with x_series
             series.reset_index(drop=True, inplace=True)
 
-            print(repr(series))
-
             # Find how many Y values can actually be plotted on the X axis. If
             # there aren't going to be any Y values on the chart, raise an
             # error.
@@ -484,13 +526,13 @@ class Form(NamedTuple):
                     )
                 )
 
-            y_columns.append(
+            y_serieses.append(
                 YSeries(series, ycolumn.color, input_columns[ycolumn.column].format)
             )
 
         title = self.title or "Line Chart"
         x_axis_label = self.x_axis_label or x_series.name
-        y_axis_label = self.y_axis_label or y_columns[0].name
+        y_axis_label = self.y_axis_label or y_serieses[0].name
 
         return Chart(
             title=title,
@@ -498,8 +540,8 @@ class Form(NamedTuple):
             x_axis_tick_format=x_series.d3_tick_format,
             y_axis_label=y_axis_label,
             x_series=x_series,
-            y_columns=y_columns,
-            y_axis_tick_format=y_columns[0].d3_tick_format,
+            y_serieses=y_serieses,
+            y_axis_tick_format=y_serieses[0].d3_tick_format,
         )
 
 

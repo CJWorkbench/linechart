@@ -84,8 +84,8 @@ def test_x_numeric():
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "quantitative"
     assert vega["data"]["values"] == [
-        {"x": 1, "line": "B", "y": 3},
-        {"x": 2, "line": "B", "y": 4},
+        {"x": 1, "y0": 3},
+        {"x": 2, "y0": 4},
     ]
 
 
@@ -99,8 +99,8 @@ def test_x_numeric_drop_na_x():
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "quantitative"
     assert vega["data"]["values"] == [
-        {"x": 1, "line": "B", "y": 3},
-        {"x": 3, "line": "B", "y": 5},
+        {"x": 1, "y0": 3},
+        {"x": 3, "y0": 5},
     ]
 
 
@@ -115,8 +115,8 @@ def test_x_text():
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "ordinal"
     assert vega["data"]["values"] == [
-        {"x": "a", "line": "B", "y": 1},
-        {"x": "b", "line": "B", "y": 2},
+        {"x": "a", "y0": 1},
+        {"x": "b", "y0": 2},
     ]
 
 
@@ -131,8 +131,8 @@ def test_x_text_sort():
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "ordinal"
     assert vega["data"]["values"] == [
-        {"x": "b", "line": "B", "y": 1},
-        {"x": "a", "line": "B", "y": 2},
+        {"x": "b", "y0": 1},
+        {"x": "a", "y0": 2},
     ]
     assert vega["encoding"]["x"]["sort"] is None
 
@@ -148,8 +148,8 @@ def test_x_text_drop_na_x():
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "ordinal"
     assert vega["data"]["values"] == [
-        {"x": "a", "line": "B", "y": 1},
-        {"x": "c", "line": "B", "y": 3},
+        {"x": "a", "y0": 1},
+        {"x": "c", "y0": 3},
     ]
 
 
@@ -187,8 +187,8 @@ def test_x_timestamp():
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "temporal"
     assert vega["data"]["values"] == [
-        {"x": "2018-08-29T13:39:00Z", "line": "B", "y": 3},
-        {"x": "2018-08-29T13:40:00Z", "line": "B", "y": 4},
+        {"x": "2018-08-29T13:39:00Z", "y0": 3},
+        {"x": "2018-08-29T13:40:00Z", "y0": 4},
     ]
 
 
@@ -211,8 +211,8 @@ def test_x_timestamp_custom_ticks():
         == 'utcFormat(datum.value, "%b %-d, %Y")'
     )
     assert vega["data"]["values"] == [
-        {"x": "2020-12-07T00:00:00Z", "line": "B", "y": 3},
-        {"x": "2020-12-14T00:00:00Z", "line": "B", "y": 4},
+        {"x": "2020-12-07T00:00:00Z", "y0": 3},
+        {"x": "2020-12-14T00:00:00Z", "y0": 4},
     ]
 
 
@@ -230,8 +230,8 @@ def test_x_timestamp_drop_na_x():
     vega = chart.to_vega()
     assert vega["encoding"]["x"]["type"] == "temporal"
     assert vega["data"]["values"] == [
-        {"x": "2018-08-29T13:39:00Z", "line": "B", "y": 3},
-        {"x": "2018-08-29T13:40:00Z", "line": "B", "y": 5},
+        {"x": "2018-08-29T13:39:00Z", "y0": 3},
+        {"x": "2018-08-29T13:40:00Z", "y0": 5},
     ]
 
 
@@ -250,10 +250,9 @@ def test_drop_missing_y_but_not_x():
     )
     vega = chart.to_vega()
     assert vega["data"]["values"] == [
-        {"x": 1, "line": "B", "y": 4.0},
-        {"x": 3, "line": "B", "y": 6.0},
-        {"x": 1, "line": "C", "y": 7.0},
-        {"x": 2, "line": "C", "y": 8.0},
+        {"x": 1, "y0": 4.0, "y1": 7.0},
+        {"x": 2, "y0": None, "y1": 8.0},
+        {"x": 3, "y0": 6.0, "y1": None},
     ]
 
 
@@ -308,4 +307,4 @@ def test_default_title_and_labels():
     vega = chart.to_vega()
     assert vega["title"] == "Line Chart"
     assert vega["encoding"]["x"]["axis"]["title"] == "A"
-    assert vega["encoding"]["y"]["axis"]["title"] == "B"
+    assert vega["layer"][0]["encoding"]["y"]["axis"]["title"] == "B"
