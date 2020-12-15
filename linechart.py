@@ -280,8 +280,9 @@ class Chart(NamedTuple):
             return None  # explicitly set "no legend"
 
         return {
-            "title": None,  # it's already on the Y axis
+            "title": None,
             "labelExpr": (
+                # lookup label based on datum.value -- e.g., "y0"
                 json.dumps({f"y{i}": y.name for i, y in enumerate(self.y_serieses)})
                 + "[datum.value]"
             ),
@@ -295,42 +296,52 @@ class Chart(NamedTuple):
 
     def to_vega(self) -> Dict[str, Any]:
         """Build a Vega line chart."""
+
+        LABEL_COLOR = "#383838"
+        TITLE_COLOR = "#686768"
+        HOVER_COLOR = TITLE_COLOR
+        GRID_COLOR = "#ededed"
         ret = {
             "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
             "title": self.title,
             "config": {
+                "font": "Roboto, Helvetica, sans-serif",
                 "title": {
                     "offset": 15,
                     "color": "#383838",
-                    "font": "Nunito Sans, Helvetica, sans-serif",
                     "fontSize": 20,
                     "fontWeight": "normal",
                 },
                 "axis": {
                     "tickSize": 3,
+                    "tickColor": GRID_COLOR,  # fade into grid
                     "titlePadding": 20,
                     "titleFontSize": 15,
-                    "titleFontWeight": 100,
-                    "titleColor": "#686768",
-                    "titleFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                    "labelFontWeight": 400,
-                    "labelColor": "#383838",
+                    "titleFontWeight": "normal",
+                    "titleColor": TITLE_COLOR,
+                    "labelColor": LABEL_COLOR,
                     "labelFontSize": 12,
                     "labelPadding": 10,
-                    "gridOpacity": 0.5,
+                    "gridColor": GRID_COLOR,
+                    "domain": False,  # no bold lines along left + bottom
+                },
+                "axisY": {
+                    "title": self.y_axis_label,
+                    "format": self.y_axis_tick_format,
+                },
+                "axisX": {
+                    "title": self.x_axis_label or self.x_series.column.name,
                 },
             },
             "data": {
                 "values": self.to_vega_inline_data(),
             },
             "encoding": {
-                "x": self.to_vega_x_encoding(),
+                "x": self.to_vega_x_encoding(),  # for all layers
                 "tooltip": [
                     {
                         "field": "x",
                         "type": self.x_series.vega_data_type,
-                        "title": self.x_axis_label or self.x_series.column.name,
                     },
                     *[
                         {
@@ -343,56 +354,133 @@ class Chart(NamedTuple):
                 ],
             },
             "layer": [
+                # Each column gets two layers:
+                #
+                # 1. a "line" layer, with the line, point and legend details
+                # 2. a "point" layer, only shown when hovering
+                #
+                # There's also a "hover" layer (a vertical "rule") in between.
+                #
+                # For three columns, the layers are (from bottom to top):
+                #
+                # * y0-line (with a point)
+                # * y1-line (with a point)
+                # * y2-line (with a point)
+                # * rule (on hover)
+                # * y0-point (on hover)
+                # * y1-point (on hover)
+                # * y2-point (on hover)
+                #
+                # All the "hover" stuff appears on _top_ of all the not-hover
+                # stuff. That breaks spatial rules a bit (y1-point can appear
+                # atop y0-line, on hover), for the sake of readability (the
+                # user _wants_ to see y1-point on hover).
+                *[
+                    {
+                        "mark": {
+                            # yN-line
+                            "type": "line",
+                            "point": {
+                                # There's always a visible dot (this one). The
+                                # yN-point layer draws _another_ dot on top.
+                                # (Rationale: we can't control this point's
+                                # color separately from its line's color.)
+                                "shape": "circle",
+                                "size": 36,
+                            },
+                        },
+                        "encoding": {
+                            "y": {
+                                "field": f"y{i}",
+                                "type": "quantitative",
+                                "title": y_series.name,
+                            },
+                            "color": {
+                                # This would normally be a constant, but one
+                                # vega-lite side-effect is to populate the
+                                # legend.
+                                "datum": f"y{i}",
+                                **(
+                                    {
+                                        "scale": self.to_vega_color_scale(),
+                                        "legend": self.to_vega_color_legend(),
+                                    }
+                                    if i == 0
+                                    else {}
+                                ),
+                            },
+                        },
+                    }
+                    for i, y_series in enumerate(self.y_serieses)
+                ],
                 {
+                    # https://vega.github.io/vega-lite/examples/interactive_multi_line_tooltip.html
+                    #
+                    # The "rule" layer (vertical line) is before all the "line"
+                    # layers so the lines are drawn on top of the rule.
                     "mark": {
-                        "type": "line",
-                        "point": {
-                            "shape": "circle",
-                            "size": 36,
+                        # rule
+                        "type": "rule",
+                        "strokeWidth": 2,
+                        "color": HOVER_COLOR,
+                    },
+                    "selection": {
+                        "hover": {
+                            "type": "single",
+                            "on": "mouseover",
+                            "empty": "none",
+                            # https://vega.github.io/vega-lite/docs/nearest.html
+                            "nearest": True,
+                            "clear": "mouseout",
                         },
                     },
                     "encoding": {
-                        "y": {
-                            "field": f"y{i}",
-                            "type": "quantitative",
-                            "title": y_series.name,
-                            "axis": {
-                                "title": self.y_axis_label,
-                                "format": self.y_axis_tick_format,
+                        # Only the selected ("hover") rule has opacity
+                        "opacity": {
+                            "condition": {
+                                "selection": "hover",
+                                "value": 1,
                             },
-                        },
-                        "color": {
-                            "datum": f"y{i}",
-                            **(
-                                {
-                                    "scale": self.to_vega_color_scale(),
-                                    "legend": self.to_vega_color_legend(),
-                                }
-                                if i == 0
-                                else {}
-                            ),
+                            "value": 0,
                         },
                     },
-                }
-                for i, y_series in enumerate(self.y_serieses)
+                },
+                *[
+                    {
+                        "mark": {
+                            # yN-point
+                            "type": "point",
+                            "size": 49,
+                            "fill": y_series.color,
+                            "strokeWidth": 2,
+                            "stroke": HOVER_COLOR,
+                        },
+                        "encoding": {
+                            "y": {
+                                # repeated
+                                "field": f"y{i}",
+                                "type": "quantitative",
+                            },
+                            "opacity": {
+                                # Only the selected ("hover") yN-point has opacity
+                                "condition": {"selection": "hover", "value": 1},
+                                "value": 0,
+                            },
+                        },
+                    }
+                    for i, y_series in enumerate(self.y_serieses)
+                ],
             ],
         }
 
         if self.y_axis_tick_format[-1] == "d":
-            for layer in ret["layer"]:
-                layer["encoding"]["y"]["axis"]["tickMinStep"] = 1
+            ret["config"]["axisY"]["tickMinStep"] = 1
 
         if len(self.y_serieses) > 1:
             ret["config"]["legend"] = {
-                "symbolType": "circle",
-                "titlePadding": 20,
-                "padding": 15,
-                "offset": 0,
-                "labelFontSize": 12,
                 "rowPadding": 10,
-                "labelFont": "Nunito Sans, Helvetica, sans-serif",
-                "labelColor": "#383838",
-                "labelFontWeight": "normal",
+                "labelFontSize": 12,
+                "labelColor": LABEL_COLOR,
             }
 
         return ret

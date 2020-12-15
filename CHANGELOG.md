@@ -2,6 +2,12 @@
 -------------
 
 * HTML: nix obsolete styling of the "ellipsis" button and fix its position.
+* Change font to Roboto, to match Workbench.
+* Gridlines: use color, not opacity.
+* Axes: hide the "domain" line, and color ticks like gridlines.
+* Legend: nix top and right padding by reverting to Vega defaults
+* Interaction: on hover, highlight the closest X value and all Y values, and
+  show their values in a tooltip.
 
 2020-12-14.01
 -------------

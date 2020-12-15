@@ -170,6 +170,17 @@ def test_x_text_too_many_values():
     )
 
 
+def test_y_integer_ticks():
+    form = build_form(x_column="A")
+    table = pd.DataFrame({"A": [1, 2, 3], "B": [2, 3, 4]})
+    chart = form.make_chart(
+        table,
+        {"A": Column("A", "number", "{:}"), "B": Column("B", "number", "{:,d}")},
+    )
+    vega = chart.to_vega()
+    assert vega["config"]["axisY"]["tickMinStep"] == 1
+
+
 def test_x_timestamp():
     form = build_form(x_column="A")
     t1 = datetime.datetime(2018, 8, 29, 13, 39)
@@ -239,7 +250,9 @@ def test_drop_missing_y_but_not_x():
     form = build_form(
         x_column="A", y_columns=[YColumn("B", "#123456"), YColumn("C", "#234567")]
     )
-    table = pd.DataFrame({"A": [1, 2, 3], "B": [4, np.nan, 6], "C": [7, 8, np.nan]})
+    table = pd.DataFrame(
+        {"A": [1, 2, 3, 4], "B": [4, np.nan, 6, np.nan], "C": [7, 8, np.nan, np.nan]}
+    )
     chart = form.make_chart(
         table,
         {
@@ -253,6 +266,7 @@ def test_drop_missing_y_but_not_x():
         {"x": 1, "y0": 4.0, "y1": 7.0},
         {"x": 2, "y0": None, "y1": 8.0},
         {"x": 3, "y0": 6.0, "y1": None},
+        {"x": 4, "y0": None, "y1": None},
     ]
 
 
@@ -307,4 +321,4 @@ def test_default_title_and_labels():
     vega = chart.to_vega()
     assert vega["title"] == "Line Chart"
     assert vega["encoding"]["x"]["axis"]["title"] == "A"
-    assert vega["layer"][0]["encoding"]["y"]["axis"]["title"] == "B"
+    assert vega["config"]["axisY"]["title"] == "B"
