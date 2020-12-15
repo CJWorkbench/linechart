@@ -1,3 +1,8 @@
+2020-12-15.01
+-------------
+
+* HTML: nix obsolete styling of the "ellipsis" button and fix its position.
+
 2020-12-14.01
 -------------
 
