@@ -1,3 +1,8 @@
+2021-01-20.01
+-------------
+
+* HTML: remove 16px margin, to give more control to users
+
 2020-12-15.01
 -------------
 
