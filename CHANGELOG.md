@@ -1,3 +1,8 @@
+2021-02-11.01
+-------------
+
+* Fix: show custom Y-axis label instead of default
+
 2021-01-20.01
 -------------
 
