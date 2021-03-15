@@ -322,7 +322,6 @@ def test_default_title_and_labels():
     assert vega["title"] == "Line Chart"
     assert vega["encoding"]["x"]["axis"]["title"] == "A"
     assert vega["encoding"]["y"] == {"title": "B"}
-    assert vega["layer"][0]["encoding"]["y"]["title"] == "B"
 
 
 def test_y_axis_label():
@@ -330,4 +329,17 @@ def test_y_axis_label():
     chart = form.make_chart(min_table, min_columns)
     vega = chart.to_vega()
     assert vega["encoding"]["y"] == {"title": "Hallo"}
-    assert vega["layer"][0]["encoding"]["y"]["title"] == "B"
+
+
+def test_y_axis_empty_label_when_multiple_series():
+    form = build_form(
+        x_column="A",
+        y_columns=[YColumn("B", "#123456"), YColumn("C", "#234567")],
+        y_axis_label="",
+    )
+    chart = form.make_chart(
+        pd.DataFrame({"A": [1, 2], "B": [3, 4], "C": [5, 6]}),
+        {k: Column(k, "number", "{:,}") for k in "ABC"},
+    )
+    vega = chart.to_vega()
+    assert vega["encoding"]["y"] == {"title": ""}

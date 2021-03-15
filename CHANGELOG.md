@@ -1,3 +1,9 @@
+2021-03-15.01
+-------------
+
+* On multi-series chart, hide Y-axis label by default. (Previously, the first
+  series name was used as Y-axis label.)
+
 2021-02-11.01
 -------------
 

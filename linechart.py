@@ -620,7 +620,10 @@ class Form(NamedTuple):
 
         title = self.title or "Line Chart"
         x_axis_label = self.x_axis_label or x_series.name
-        y_axis_label = self.y_axis_label or y_serieses[0].name
+        if len(y_serieses) == 1:
+            y_axis_label = self.y_axis_label or y_serieses[0].name
+        else:
+            y_axis_label = self.y_axis_label
 
         return Chart(
             title=title,
