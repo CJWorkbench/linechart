@@ -301,6 +301,18 @@ class Chart(NamedTuple):
     def to_vega(self) -> Dict[str, Any]:
         """Build a Vega line chart."""
 
+        x_encoding = self.to_vega_x_encoding()
+        if "labelExpr" in x_encoding["axis"]:
+            tooltip_extras = {
+                "scale": {"type": "utc"},
+                # 'utcFormat(datum.value, "%Y-%m")' => "%Y-%m"
+                "format": x_encoding["axis"]["labelExpr"].split('"')[1],
+            }
+        elif self.x_series.vega_data_type == "temporal":
+            tooltip_extras = {"scale": {"type": "utc"}}
+        else:
+            tooltip_extras = {}
+
         LABEL_COLOR = "#383838"
         TITLE_COLOR = "#686768"
         HOVER_COLOR = TITLE_COLOR
@@ -337,12 +349,13 @@ class Chart(NamedTuple):
                 "values": self.to_vega_inline_data(),
             },
             "encoding": {
-                "x": self.to_vega_x_encoding(),  # for all layers
+                "x": x_encoding,  # for all layers
                 "y": self.to_vega_y_encoding(),  # for all layers
                 "tooltip": [
                     {
                         "field": "x",
                         "type": self.x_series.vega_data_type,
+                        **tooltip_extras,
                     },
                     *[
                         {
