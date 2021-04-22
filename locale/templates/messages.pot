@@ -34,6 +34,10 @@ msgstr ""
 msgid "_spec.parameters.y_columns.name"
 msgstr ""
 
+#. default-message: Select column
+msgid "_spec.parameters.y_columns.placeholder"
+msgstr ""
+
 #. default-message: Please choose an X-axis column
 #: linechart.py:555
 msgid "noXAxisError.message"
