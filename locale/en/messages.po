@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2021-04-22 15:48+0000\n"
+"POT-Creation-Date: 2021-07-29 13:23+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -17,7 +17,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.9.0\n"
+"Generated-By: Babel 2.9.1\n"
 
 msgid "_spec.name"
 msgstr "Line Chart"
@@ -49,44 +49,44 @@ msgstr "Column"
 msgid "_spec.parameters.y_columns.placeholder"
 msgstr "Select column"
 
-#: linechart.py:555
+#: linechart.py:559
 msgid "noXAxisError.message"
 msgstr "Please choose an X-axis column"
 
-#: linechart.py:572
+#: linechart.py:576
 msgid "tooManyTextValuesError.message"
 msgstr ""
 "Column \"{x_column}\" has {n_safe_x_values} text values. We cannot fit "
 "them all on the X axis. Please change the input table to have 10 or fewer"
 " rows, or convert \"{x_column}\" to number or date."
 
-#: linechart.py:579
+#: linechart.py:583
 msgid "noValuesError.message"
 msgstr "Column \"{column_name}\" has no values. Please select a column with data."
 
-#: linechart.py:588
+#: linechart.py:592
 msgid "onlyOneValueError.message"
 msgstr ""
 "Column \"{column_name}\" has only 1 value. Please select a column with 2 "
 "or more values."
 
-#: linechart.py:618
+#: linechart.py:622
 msgid "noYAxisError.message"
 msgstr "Please choose a Y-axis column"
 
-#: linechart.py:625
+#: linechart.py:629
 msgid "sameAxesError.message"
 msgstr ""
 "You cannot plot Y-axis column {column_name} because it is the X-axis "
 "column"
 
-#: linechart.py:636
+#: linechart.py:640
 msgid "axisNotNumericError.message"
 msgstr ""
 "Cannot plot Y-axis column \"{column_name}\" because it is not numeric. "
 "Convert it to a number before plotting it."
 
-#: linechart.py:652
+#: linechart.py:656
 msgid "emptyAxisError.message"
 msgstr "Cannot plot Y-axis column \"{column_name}\" because it has no values"
 

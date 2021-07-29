@@ -1,3 +1,10 @@
+2021-07-29.01
+-------------
+
+* Tweak tick-mark calculations when X axis is Date
+* Tend towards fewer gridlines alone a Date or Number X axis
+* Tend towards fewer gridlines along the Y axis
+
 2021-04-22.01
 -------------
 

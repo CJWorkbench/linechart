@@ -4,7 +4,7 @@ from typing import Literal, NamedTuple, Optional
 import pandas as pd
 from pandas.testing import assert_series_equal
 
-from linechart import XSeries
+from linechart import Chart, XSeries
 
 
 class Column(NamedTuple):
@@ -52,6 +52,46 @@ def test_json_compatible_values_date():
             ]
         ),
     )
+
+
+def test_date_day_unit():
+    x_series = XSeries(
+        pd.Series(["2020-11-30", "2020-12-07"], dtype="period[D]"),
+        Column("date", format="day"),
+    )
+    chart = Chart(
+        title="hi",
+        x_axis_label="",
+        x_axis_tick_format="",
+        x_series=x_series,
+        y_serieses=[],
+        y_axis_label="",
+        y_axis_tick_format="",
+    )
+    x_encoding = chart.to_vega_x_encoding()
+    assert "values" not in x_encoding["axis"]  # let Vega do the work
+    assert x_encoding["timeUnit"] == "utcyearmonthdate"
+    assert x_encoding["axis"]["labelExpr"] == 'utcFormat(datum.value, "%b %-d, %Y")'
+
+
+def test_date_month_unit():
+    x_series = XSeries(
+        pd.Series(["2020-11-01", "2020-12-01"], dtype="period[D]"),
+        Column("date", format="month"),
+    )
+    chart = Chart(
+        title="hi",
+        x_axis_label="",
+        x_axis_tick_format="",
+        x_series=x_series,
+        y_serieses=[],
+        y_axis_label="",
+        y_axis_tick_format="",
+    )
+    x_encoding = chart.to_vega_x_encoding()
+    assert "values" not in x_encoding["axis"]  # let Vega do the work
+    assert x_encoding["timeUnit"] == "utcyearmonth"
+    assert x_encoding["axis"]["labelExpr"] == 'utcFormat(datum.value, "%b %Y")'
 
 
 def test_timestamp_ticks_weeks():

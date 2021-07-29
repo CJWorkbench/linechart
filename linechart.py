@@ -49,6 +49,23 @@ def migrate_params(params):
     return params
 
 
+_DATE_TIME_UNITS = {
+    "year": "utcyear",
+    "quarter": "utcyearmonth",
+    "month": "utcyearmonth",
+    "week": "utcyearmonthdate",
+    "day": "utcyearmonthdate",
+}
+
+_DATE_TICK_FORMATS = {
+    "year": "%Y",  # "2020"
+    "quarter": "Q%q %Y",  # "Q2 2020"
+    "month": "%b %Y",  # "Jan 2020"
+    "week": "%b %-d, %Y",  # "Jan 3, 2020"
+    "day": "%b %-d, %Y",  # "Jan 3, 2020"
+}
+
+
 def python_format_to_d3_tick_format(python_format: str) -> str:
     """
     Build a d3-scale tickFormat specification based on Python str.
@@ -153,33 +170,21 @@ class XSeries(NamedTuple):
               fewer ticks. Make sure the _last_ date is always a tick, and
               impute a start tick that may come before all dates in the series.
         """
-        if self.column.type not in {"timestamp", "date"}:
-            return None
+        assert self.column.type == "timestamp"
 
-        if self.column.type == "timestamp" and not self.series.dt.normalize().equals(
-            self.series
-        ):
+        if not self.series.dt.normalize().equals(self.series):
             # Dates with times. Fallback to vega-lite (D3) defaults
             return None
 
         # Okay, we have whole dates.
 
-        if self.column.type == "date":
+        def ordinal(v: pd.Timestamp, freq: str) -> int:
+            return v.to_period(freq).ordinal
 
-            def ordinal(v: pd.Period, freq: str) -> int:
-                return v.asfreq(freq).ordinal
-
-        else:
-
-            def ordinal(v: pd.Timestamp, freq: str) -> int:
-                return v.to_period(freq).ordinal
-
-        def date(v: Union[pd.Period, pd.Timestamp]) -> datetime.date:
+        def date(v: pd.Timestamp) -> datetime.date:
             return datetime.date(v.year, v.month, v.day)
 
-        if (self.column.type == "date" and self.column.format == "year") or (
-            self.column.type == "timestamp" and self.series.dt.is_year_start.all()
-        ):
+        if self.series.dt.is_year_start.all():
             # All dates are the first of the year. Treat this as "years".
             series_min = self.series.min()
             series_max = self.series.max()
@@ -187,22 +192,10 @@ class XSeries(NamedTuple):
             n_periods_in_domain = ordinal(series_max, "Y") - ordinal(series_min, "Y")
             return (
                 _nice_date_ticks(date(series_max), n_periods_in_domain, period),
-                "%Y",  # "2020"
+                _DATE_TICK_FORMATS["year"],
             )
 
-        if self.column.type == "date" and self.column.format == "quarter":
-            series_min = self.series.min()
-            series_max = self.series.max()
-            period = relativedelta(months=3)
-            n_periods_in_domain = ordinal(series_max, "Q") - ordinal(series_min, "Q")
-            return (
-                _nice_date_ticks(date(series_max), n_periods_in_domain, period),
-                "Q%q %Y",  # "Q2 2020"
-            )
-
-        if (self.column.type == "date" and self.column.format == "month") or (
-            self.column.type == "timestamp" and self.series.dt.is_month_start.all()
-        ):
+        if self.series.dt.is_month_start.all():
             # All dates are the first of the month. Treat this as "months".
             series_min = self.series.min()
             series_max = self.series.max()
@@ -210,12 +203,10 @@ class XSeries(NamedTuple):
             n_periods_in_domain = ordinal(series_max, "M") - ordinal(series_min, "M")
             return (
                 _nice_date_ticks(date(series_max), n_periods_in_domain, period),
-                "%b %Y",  # "Jan 2020"
+                _DATE_TICK_FORMATS["month"],
             )
 
-        if (self.column.type == "date" and self.column.format == "week") or (
-            self.column.type == "timestamp" and self.series.dt.dayofweek.nunique() == 1
-        ):
+        if self.series.dt.dayofweek.nunique() == 1:
             # All dates fall on the same weekday. Treat this as "weeks".
             series_min = self.series.min()
             series_max = self.series.max()
@@ -223,7 +214,7 @@ class XSeries(NamedTuple):
             n_periods_in_domain = ordinal(series_max, "W") - ordinal(series_min, "W")
             return (
                 _nice_date_ticks(date(series_max), n_periods_in_domain, period),
-                "%b %-d, %Y",  # "Jan 3, 2020"
+                _DATE_TICK_FORMATS["week"],
             )
 
 
@@ -278,30 +269,42 @@ class Chart(NamedTuple):
             "axis": {"title": self.x_axis_label},
         }
 
+        if self.x_series.vega_data_type == "ordinal":
+            ret["axis"]["labelAngle"] = 0
+            ret["axis"]["labelOverlap"] = False
+            ret["sort"] = None
+        else:
+            ret["axis"]["tickCount"] = {"expr": "ceil(width/100)"}
+            ret["axis"]["labelOverlap"] = "parity"  # no auto-rotating
+            ret["axis"]["labelSeparation"] = 5
+
         if self.x_series.vega_data_type == "quantitative":
             if self.x_axis_tick_format is not None:
                 ret["axis"]["format"] = self.x_axis_tick_format
 
             if self.x_axis_tick_format and self.x_axis_tick_format[-1] == "d":
                 ret["axis"]["tickMinStep"] = 1
-        elif self.x_series.vega_data_type == "ordinal":
-            ret["axis"]["labelAngle"] = 0
-            ret["axis"]["labelOverlap"] = False
-            ret["sort"] = None
         elif self.x_series.vega_data_type == "temporal":
-            special_case = self.x_series.timestamp_tick_values_and_format
-            if special_case:
-                ticks, tick_format = special_case
-                ret["axis"]["values"] = [tick.isoformat() for tick in ticks]
-                ret["axis"]["labelExpr"] = f'utcFormat(datum.value, "{tick_format}")'
-                ret["axis"]["labelOverlap"] = "parity"  # no auto-rotating
-                ret["axis"]["labelSeparation"] = 5
-                ret["scale"] = {
-                    "domainMin": {
-                        "expr": "utc(%d, %d, %d)"
-                        % (ticks[0].year, ticks[0].month - 1, ticks[0].day)
+            if self.x_series.column.type == "timestamp":
+                special_case = self.x_series.timestamp_tick_values_and_format
+                if special_case:
+                    ticks, tick_format = special_case
+                    ret["axis"]["values"] = [tick.isoformat() for tick in ticks]
+                    ret["axis"][
+                        "labelExpr"
+                    ] = f'utcFormat(datum.value, "{tick_format}")'
+                    ret["scale"] = {
+                        "domainMin": {
+                            "expr": "utc(%d, %d, %d)"
+                            % (ticks[0].year, ticks[0].month - 1, ticks[0].day)
+                        }
                     }
-                }
+            else:
+                unit = self.x_series.column.format
+                time_unit = _DATE_TIME_UNITS[unit]
+                tick_format = _DATE_TICK_FORMATS[unit]
+                ret["timeUnit"] = time_unit
+                ret["axis"]["labelExpr"] = f'utcFormat(datum.value, "{tick_format}")'
 
         return ret
 
@@ -347,7 +350,7 @@ class Chart(NamedTuple):
         HOVER_COLOR = TITLE_COLOR
         GRID_COLOR = "#ededed"
         ret = {
-            "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
             "title": self.title,
             "config": {
                 "font": "Roboto, Helvetica, sans-serif",
@@ -372,6 +375,7 @@ class Chart(NamedTuple):
                 },
                 "axisY": {
                     "format": self.y_axis_tick_format,
+                    "tickCount": {"expr": "ceil(height/100)"},  # fewer lines
                 },
             },
             "data": {
